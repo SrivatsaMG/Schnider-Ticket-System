@@ -9,6 +9,9 @@ interface User {
   id: string;
   username: string;
   email: string;
+  role: string;
+  plant?: string;
+  department?: string;
   createdAt: string;
 }
 
@@ -85,6 +88,20 @@ export default function DashboardPage() {
                   </p>
                 </div>
                 <div>
+                  <p className="text-sm text-gray-600">Role</p>
+                  <p data-testid="text-role" className="text-lg font-semibold capitalize">
+                    {user.role}
+                  </p>
+                </div>
+                {user.plant && (
+                  <div>
+                    <p className="text-sm text-gray-600">Plant</p>
+                    <p data-testid="text-plant" className="text-lg font-semibold">
+                      {user.plant}
+                    </p>
+                  </div>
+                )}
+                <div>
                   <p className="text-sm text-gray-600">Member Since</p>
                   <p data-testid="text-created-at" className="text-lg font-semibold">
                     {new Date(user.createdAt).toLocaleDateString()}
@@ -126,6 +143,67 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+
+        {user && user.role === "admin" && (
+          <Card className="shadow-lg mt-6">
+            <CardHeader>
+              <CardTitle>Administration</CardTitle>
+              <CardDescription>Manage system, plants, and users</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <Button
+                  data-testid="button-admin-dashboard"
+                  onClick={() => setLocation("/admin-dashboard")}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Admin Dashboard
+                </Button>
+                <Button
+                  data-testid="button-manage-plants"
+                  onClick={() => setLocation("/admin-plants")}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Manage Plants
+                </Button>
+                <Button
+                  data-testid="button-manage-users"
+                  onClick={() => setLocation("/admin-users")}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Manage Users
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {user && user.role === "manager" && (
+          <Card className="shadow-lg mt-6">
+            <CardHeader>
+              <CardTitle>Management</CardTitle>
+              <CardDescription>Manage your plant operations</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <Button
+                  data-testid="button-view-employees"
+                  onClick={() => setLocation("/admin-users")}
+                  className="bg-cyan-600 hover:bg-cyan-700"
+                >
+                  View Employees
+                </Button>
+                <Button
+                  data-testid="button-add-employee"
+                  onClick={() => setLocation("/manager-create-employee")}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Add Employee
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
