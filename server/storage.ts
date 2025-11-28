@@ -68,17 +68,21 @@ export class SupabaseStorage implements IStorage {
   }
 
   async seedAdminUser(): Promise<void> {
-    const existingAdmin = await this.getUserByEmail("admin@example.com");
-    if (!existingAdmin) {
-      await this.createUser(
-        {
-          username: "admin",
-          email: "admin@example.com",
-          password: "admin123",
-        },
-        true
-      );
-      console.log("Admin user created: admin@example.com / admin123");
+    try {
+      const existingAdmin = await this.getUserByEmail("admin@example.com");
+      if (!existingAdmin) {
+        await this.createUser(
+          {
+            username: "admin",
+            email: "admin@example.com",
+            password: "admin123",
+          },
+          true
+        );
+        console.log("Admin user created: admin@example.com / admin123");
+      }
+    } catch (error: any) {
+      console.log("Note: Admin user seeding will be available once the database table is created. Error:", error.message);
     }
   }
 }
