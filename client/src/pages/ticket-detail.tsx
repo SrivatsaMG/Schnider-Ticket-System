@@ -235,7 +235,7 @@ export default function TicketDetailPage() {
                       <SelectTrigger data-testid="select-status">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent side="bottom" align="start">
+                      <SelectContent side="bottom" align="start" className="z-50 bg-white/95 backdrop-blur-sm">
                         <SelectItem value="open">Open</SelectItem>
                         <SelectItem value="inProgress">In Progress</SelectItem>
                         <SelectItem value="resolved">Resolved</SelectItem>

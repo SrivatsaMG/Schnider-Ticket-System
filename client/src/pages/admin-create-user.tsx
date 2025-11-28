@@ -167,7 +167,7 @@ export default function AdminCreateUserPage() {
                   <SelectTrigger data-testid="select-role">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-50 bg-white/95 backdrop-blur-sm">
                     <SelectItem value="employee">Employee</SelectItem>
                     <SelectItem value="manager">Manager</SelectItem>
                     <SelectItem value="admin">Admin</SelectItem>
