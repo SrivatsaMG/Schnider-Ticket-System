@@ -90,16 +90,6 @@ export default function LoginPage() {
             <p className="text-gray-600">Sign in to your Schnider Ticket System account</p>
           </div>
 
-          {/* Demo Credentials Alert */}
-          <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4">
-            <p className="text-sm font-bold text-amber-900 mb-2">Demo Login Credentials:</p>
-            <div className="space-y-1 text-xs text-amber-800">
-              <p><span className="font-semibold">Admin:</span> admin@example.com / admin123</p>
-              <p><span className="font-semibold">Manager:</span> manager@example.com / manager123</p>
-              <p><span className="font-semibold">Employee:</span> Register new account</p>
-            </div>
-          </div>
-
           {/* Login Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Email Field */}
