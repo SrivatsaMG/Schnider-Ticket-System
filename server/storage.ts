@@ -25,11 +25,14 @@ export interface IStorage {
   assignTicket(ticketId: string, userId: string): Promise<Ticket>;
   getTicketReplies(ticketId: string): Promise<TicketReply[]>;
   createReply(ticketId: string, userId: string, message: string): Promise<TicketReply>;
+  getPlants(): Promise<any[]>;
+  createPlant(name: string, location?: string): Promise<any>;
 }
 
 const inMemoryUsers: Map<string, User> = new Map();
 const inMemoryTickets: Map<string, Ticket> = new Map();
 const inMemoryReplies: Map<string, TicketReply[]> = new Map();
+const inMemoryPlants: Map<string, any> = new Map();
 
 function initDemoData() {
   const adminHashedPassword = bcrypt.hashSync("admin123", 10);
@@ -380,6 +383,58 @@ export class SupabaseStorage implements IStorage {
     }
 
     return (data as unknown as TicketReply);
+  }
+
+  async getPlants(): Promise<any[]> {
+    if (this.useInMemory) {
+      return Array.from(inMemoryPlants.values());
+    }
+
+    const { data, error } = await supabase
+      .from("plants")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      this.useInMemory = true;
+      return Array.from(inMemoryPlants.values());
+    }
+
+    return ((data as any) || []);
+  }
+
+  async createPlant(name: string, location?: string): Promise<any> {
+    const id = `plant-${Date.now()}`;
+    const now = new Date().toISOString();
+
+    const newPlant = {
+      id,
+      name,
+      location: location || null,
+      created_at: now,
+    };
+
+    if (this.useInMemory) {
+      inMemoryPlants.set(id, newPlant);
+      return newPlant;
+    }
+
+    const { data, error } = await supabase
+      .from("plants")
+      .insert({
+        name,
+        location: location || null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      this.useInMemory = true;
+      inMemoryPlants.set(id, newPlant);
+      return newPlant;
+    }
+
+    return (data as any);
   }
 }
 

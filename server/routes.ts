@@ -254,6 +254,41 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/plants", async (req, res) => {
+    try {
+      const plants = await storage.getPlants();
+      res.json(plants);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to fetch plants" });
+    }
+  });
+
+  app.post("/api/plants", async (req, res) => {
+    try {
+      const userStr = req.query.user as string;
+      if (!userStr) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = JSON.parse(userStr);
+      const permissions = ROLE_PERMISSIONS[user.role as keyof typeof ROLE_PERMISSIONS];
+
+      if (!permissions?.managePlants && user.role !== ROLES.ADMIN) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const { name, location } = req.body;
+      if (!name) {
+        return res.status(400).json({ message: "Plant name is required" });
+      }
+
+      const plant = await storage.createPlant(name, location);
+      res.status(201).json({ message: "Plant created", plant });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to create plant" });
+    }
+  });
+
   app.get("/api/tickets/:id/replies", async (req, res) => {
     try {
       const replies = await storage.getTicketReplies(req.params.id);
