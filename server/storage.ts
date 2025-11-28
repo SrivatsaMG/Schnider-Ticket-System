@@ -14,7 +14,8 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: InsertUser, isAdmin?: boolean): Promise<User>;
+  seedAdminUser(): Promise<void>;
 }
 
 export class SupabaseStorage implements IStorage {
@@ -45,7 +46,7 @@ export class SupabaseStorage implements IStorage {
     return (data as User) || undefined;
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(insertUser: InsertUser, isAdmin = false): Promise<User> {
     const hashedPassword = await bcrypt.hash(insertUser.password, 10);
 
     const { data, error } = await supabase
@@ -54,6 +55,7 @@ export class SupabaseStorage implements IStorage {
         username: insertUser.username,
         email: insertUser.email,
         password: hashedPassword,
+        is_admin: isAdmin,
       })
       .select()
       .single();
@@ -63,6 +65,21 @@ export class SupabaseStorage implements IStorage {
     }
 
     return data as User;
+  }
+
+  async seedAdminUser(): Promise<void> {
+    const existingAdmin = await this.getUserByEmail("admin@example.com");
+    if (!existingAdmin) {
+      await this.createUser(
+        {
+          username: "admin",
+          email: "admin@example.com",
+          password: "admin123",
+        },
+        true
+      );
+      console.log("Admin user created: admin@example.com / admin123");
+    }
   }
 }
 

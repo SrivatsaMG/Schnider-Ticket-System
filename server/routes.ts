@@ -8,6 +8,9 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Seed admin user on startup
+  await storage.seedAdminUser();
+
   // Register endpoint
   app.post("/api/auth/register", async (req, res) => {
     try {
@@ -21,7 +24,7 @@ export async function registerRoutes(
         return res.status(409).json({ message: "Email already registered" });
       }
 
-      const user = await storage.createUser(parsed.data);
+      const user = await storage.createUser(parsed.data, false);
       const { password, ...userWithoutPassword } = user;
 
       res.status(201).json({
@@ -61,6 +64,37 @@ export async function registerRoutes(
       });
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Login failed" });
+    }
+  });
+
+  // Admin login endpoint
+  app.post("/api/auth/admin-login", async (req, res) => {
+    try {
+      const parsed = loginSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid input" });
+      }
+
+      const user = await storage.getUserByEmail(parsed.data.email);
+      if (!user || !user.isAdmin) {
+        return res.status(401).json({ message: "Admin access denied" });
+      }
+
+      const isPasswordValid = await bcrypt.compare(
+        parsed.data.password,
+        user.password
+      );
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      const { password, ...userWithoutPassword } = user;
+      res.json({
+        message: "Admin login successful",
+        user: userWithoutPassword,
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Admin login failed" });
     }
   });
 
