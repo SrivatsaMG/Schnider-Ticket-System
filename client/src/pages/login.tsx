@@ -59,46 +59,60 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
-        <div className="absolute bottom-20 right-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20"></div>
+    <div className="min-h-screen bg-white flex flex-col md:flex-row">
+      {/* Left Side - Branding */}
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-br from-blue-600 to-blue-800 flex-col justify-center items-center p-8 text-white">
+        <div className="text-center space-y-6">
+          <div className="space-y-3">
+            <h1 className="text-6xl font-bold">Schnider</h1>
+            <p className="text-2xl font-light text-blue-100">Ticket System</p>
+          </div>
+          <p className="text-lg text-blue-200 max-w-sm">Professional Production Issue Management Platform</p>
+          <div className="pt-8 space-y-4 text-left bg-blue-700 bg-opacity-50 p-6 rounded-xl">
+            <p className="font-semibold text-blue-100">Key Features:</p>
+            <ul className="space-y-2 text-blue-100 text-sm">
+              <li>✓ Role-based access control</li>
+              <li>✓ File attachments support</li>
+              <li>✓ Real-time notifications</li>
+              <li>✓ Ticket tracking & management</li>
+              <li>✓ Multi-plant organization</li>
+            </ul>
+          </div>
+        </div>
       </div>
 
-      <Card className="w-full max-w-md shadow-2xl border-0 relative z-10">
-        <CardHeader className="space-y-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
-          <div className="space-y-2">
-            <CardTitle className="text-4xl font-bold">Schnider</CardTitle>
-            <CardDescription className="text-blue-100 text-lg">Ticket System</CardDescription>
+      {/* Right Side - Login Form */}
+      <div className="w-full md:w-1/2 flex flex-col justify-center items-center p-6 md:p-12">
+        <div className="w-full max-w-sm space-y-8">
+          {/* Header */}
+          <div className="text-center space-y-2">
+            <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
+            <p className="text-gray-600">Sign in to your Schnider Ticket System account</p>
           </div>
-          <p className="text-sm text-blue-100">Professional Production Issue Management</p>
-        </CardHeader>
 
-        <CardContent className="pt-8">
-          <Alert className="mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-lg">
-            <AlertDescription className="text-sm text-amber-900">
-              <strong className="block mb-2">🔐 Demo Credentials:</strong>
-              <div className="space-y-1 text-xs">
-                <div><span className="font-semibold">Admin:</span> admin@example.com / admin123</div>
-                <div><span className="font-semibold">Manager:</span> manager@example.com / manager123</div>
-                <div><span className="font-semibold">Employee:</span> Register new account</div>
-              </div>
-            </AlertDescription>
-          </Alert>
+          {/* Demo Credentials Alert */}
+          <div className="bg-amber-50 border-2 border-amber-300 rounded-lg p-4">
+            <p className="text-sm font-bold text-amber-900 mb-2">Demo Login Credentials:</p>
+            <div className="space-y-1 text-xs text-amber-800">
+              <p><span className="font-semibold">Admin:</span> admin@example.com / admin123</p>
+              <p><span className="font-semibold">Manager:</span> manager@example.com / manager123</p>
+              <p><span className="font-semibold">Employee:</span> Register new account</p>
+            </div>
+          </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {/* Login Form */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Email Field */}
-            <div className="space-y-3">
-              <Label htmlFor="email" className="text-sm font-semibold text-gray-700">
-                📧 Email Address
+            <div className="space-y-2">
+              <Label htmlFor="email" className="block text-sm font-semibold text-gray-900">
+                Email Address
               </Label>
               <Input
                 id="email"
                 data-testid="input-email"
-                placeholder="your@email.com"
+                placeholder="you@example.com"
                 type="email"
-                className="h-11 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-base"
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all text-base font-medium"
                 {...register("email", {
                   required: "Email is required",
                   pattern: {
@@ -109,23 +123,23 @@ export default function LoginPage() {
               />
               {errors.email && (
                 <p className="text-sm text-red-600 font-medium" data-testid="error-email">
-                  ⚠️ {errors.email.message}
+                  {errors.email.message}
                 </p>
               )}
             </div>
 
-            {/* Password Field with Show/Hide */}
-            <div className="space-y-3">
-              <Label htmlFor="password" className="text-sm font-semibold text-gray-700">
-                🔐 Password
+            {/* Password Field */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="block text-sm font-semibold text-gray-900">
+                Password
               </Label>
               <div className="relative">
                 <Input
                   id="password"
                   data-testid="input-password"
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   type={showPassword ? "text" : "password"}
-                  className="h-11 border-2 border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 text-base pr-10"
+                  className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all text-base font-medium pr-12"
                   {...register("password", {
                     required: "Password is required",
                     minLength: {
@@ -138,7 +152,7 @@ export default function LoginPage() {
                   type="button"
                   data-testid="button-toggle-password"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
@@ -149,7 +163,7 @@ export default function LoginPage() {
               </div>
               {errors.password && (
                 <p className="text-sm text-red-600 font-medium" data-testid="error-password">
-                  ⚠️ {errors.password.message}
+                  {errors.password.message}
                 </p>
               )}
             </div>
@@ -159,37 +173,32 @@ export default function LoginPage() {
               data-testid="button-login"
               type="submit"
               disabled={isLoading}
-              className="w-full h-11 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl mt-6"
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-base rounded-lg transition-all duration-200 shadow-md hover:shadow-lg mt-8"
             >
-              {isLoading ? (
-                <span className="flex items-center gap-2">
-                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  Logging in...
-                </span>
-              ) : (
-                "🚀 Login"
-              )}
+              {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
 
           {/* Register Link */}
-          <div className="mt-6 pt-6 border-t border-gray-200 text-center text-sm">
-            <span className="text-gray-600">New here? </span>
-            <button
-              data-testid="link-register"
-              onClick={() => setLocation("/register")}
-              className="text-blue-600 hover:text-blue-700 hover:underline font-semibold transition-colors"
-            >
-              Create Account
-            </button>
+          <div className="text-center">
+            <p className="text-gray-700">
+              Don't have an account?{" "}
+              <button
+                data-testid="link-register"
+                onClick={() => setLocation("/register")}
+                className="text-blue-600 font-bold hover:text-blue-700 hover:underline"
+              >
+                Create one
+              </button>
+            </p>
           </div>
 
           {/* Footer */}
-          <div className="mt-4 text-center text-xs text-gray-500">
-            <p>Secure • Reliable • Enterprise-Ready</p>
+          <div className="text-center text-xs text-gray-500 pt-4 border-t border-gray-200">
+            <p>© 2024 Schnider Ticket System. All rights reserved.</p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
