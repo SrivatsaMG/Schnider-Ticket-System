@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { useLocation } from "wouter";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Upload, X, Image as ImageIcon } from "lucide-react";
 
 interface CreateTicketFormData {
   title: string;
@@ -55,9 +56,38 @@ export default function CreateTicketPage() {
     },
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const priority = watch("priority");
   const category = watch("category");
   const plant = watch("plant");
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Image must be less than 5MB");
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        toast.error("Please select an image file");
+        return;
+      }
+      setSelectedImage(file);
+      const reader = new FileReader();
+      reader.onload = () => setImagePreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -100,18 +130,20 @@ export default function CreateTicketPage() {
 
     setIsLoading(true);
     try {
-      const ticketData = {
-        title: data.title,
-        description: data.description,
-        category: data.category,
-        plant: data.plant,
-        priority: data.priority,
-      };
+      const formData = new FormData();
+      formData.append("title", data.title);
+      formData.append("description", data.description);
+      formData.append("category", data.category);
+      formData.append("plant", data.plant);
+      formData.append("priority", data.priority);
+      
+      if (selectedImage) {
+        formData.append("image", selectedImage);
+      }
 
       const response = await fetch(`/api/tickets?user=${encodeURIComponent(JSON.stringify(user))}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(ticketData),
+        body: formData,
       });
 
       if (!response.ok) {
@@ -120,7 +152,7 @@ export default function CreateTicketPage() {
       }
 
       const result = await response.json();
-      toast.success("Ticket created successfully!");
+      toast.success(`Ticket ${result.ticket.ticketNumber} created successfully!`);
       setLocation("/tickets");
     } catch (error: any) {
       toast.error(error.message || "Failed to create ticket");
@@ -321,6 +353,67 @@ export default function CreateTicketPage() {
                   <Badge className={`${priorityColors[priority as keyof typeof priorityColors]} border w-fit`}>
                     ✓ Priority: {priority.toUpperCase()}
                   </Badge>
+                )}
+              </div>
+
+              {/* Image Upload */}
+              <div className="space-y-3">
+                <Label className="text-base font-semibold text-gray-800">
+                  Attach Image (Optional)
+                </Label>
+                <p className="text-sm text-gray-500">Upload an image related to this issue (max 5MB)</p>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                  data-testid="input-image"
+                />
+                
+                {!imagePreview ? (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
+                    data-testid="button-upload-image"
+                  >
+                    <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium">Click to upload an image</p>
+                    <p className="text-sm text-gray-400 mt-1">JPEG, PNG, GIF, WebP (max 5MB)</p>
+                  </div>
+                ) : (
+                  <div className="relative border-2 border-green-300 rounded-lg p-4 bg-green-50">
+                    <div className="flex items-center gap-4">
+                      <div className="relative w-24 h-24 rounded-lg overflow-hidden border-2 border-gray-200">
+                        <img 
+                          src={imagePreview} 
+                          alt="Preview" 
+                          className="w-full h-full object-cover"
+                          data-testid="img-preview"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <ImageIcon className="w-5 h-5 text-green-600" />
+                          <span className="font-medium text-green-800">{selectedImage?.name}</span>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {selectedImage && (selectedImage.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={removeImage}
+                        className="text-red-600 border-red-300 hover:bg-red-50"
+                        data-testid="button-remove-image"
+                      >
+                        <X className="w-4 h-4 mr-1" /> Remove
+                      </Button>
+                    </div>
+                  </div>
                 )}
               </div>
 

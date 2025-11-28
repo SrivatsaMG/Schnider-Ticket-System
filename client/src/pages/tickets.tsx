@@ -8,10 +8,13 @@ import { toast } from "sonner";
 
 interface Ticket {
   id: string;
+  ticketNumber: string;
   title: string;
   description: string;
   status: string;
   priority: string;
+  plant?: string;
+  imageUrl?: string;
   createdById: string;
   assignedToId: string | null;
   createdAt: string;
@@ -140,10 +143,25 @@ export default function TicketsPage() {
                 <CardHeader>
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-1">
+                        <Badge variant="outline" className="font-mono text-xs bg-gray-100 text-gray-700 border-gray-300">
+                          {ticket.ticketNumber || ticket.id.substring(0, 8)}
+                        </Badge>
+                        {ticket.plant && (
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-300">
+                            {ticket.plant}
+                          </Badge>
+                        )}
+                        {ticket.imageUrl && (
+                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
+                            📷 Image
+                          </Badge>
+                        )}
+                      </div>
                       <CardTitle data-testid={`text-ticket-title-${ticket.id}`}>
                         {ticket.title}
                       </CardTitle>
-                      <CardDescription>{ticket.description}</CardDescription>
+                      <CardDescription className="line-clamp-2">{ticket.description}</CardDescription>
                     </div>
                     <div className="flex gap-2">
                       <Badge className={priorityColor[ticket.priority as keyof typeof priorityColor]}>

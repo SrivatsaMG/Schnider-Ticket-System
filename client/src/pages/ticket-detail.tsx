@@ -16,12 +16,14 @@ import { toast } from "sonner";
 
 interface Ticket {
   id: string;
+  ticketNumber: string;
   title: string;
   description: string;
   status: string;
   priority: string;
   category?: string;
   plant?: string;
+  imageUrl?: string;
   createdById: string;
   assignedToId: string | null;
   createdAt: string;
@@ -200,11 +202,21 @@ export default function TicketDetailPage() {
           <CardHeader>
             <div className="flex justify-between items-start">
               <div className="flex-1">
+                <div className="flex items-center gap-3 mb-2">
+                  <Badge variant="outline" className="font-mono text-sm bg-gray-100 text-gray-700 border-gray-300 px-3 py-1">
+                    {ticket.ticketNumber || ticket.id.substring(0, 8)}
+                  </Badge>
+                  {ticket.plant && (
+                    <Badge variant="outline" className="text-sm bg-blue-50 text-blue-700 border-blue-300">
+                      {ticket.plant}
+                    </Badge>
+                  )}
+                </div>
                 <CardTitle data-testid="text-ticket-title" className="text-3xl">
                   {ticket.title}
                 </CardTitle>
                 <CardDescription className="mt-2">
-                  Ticket ID: {ticket.id}
+                  Created: {new Date(ticket.createdAt).toLocaleString()}
                 </CardDescription>
               </div>
               <div className="flex gap-2">
@@ -226,20 +238,27 @@ export default function TicketDetailPage() {
                 </p>
               </div>
 
+              {ticket.imageUrl && (
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Attached Image</p>
+                  <div className="relative border-2 border-gray-200 rounded-lg overflow-hidden max-w-md">
+                    <img 
+                      src={ticket.imageUrl} 
+                      alt="Ticket attachment" 
+                      className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                      data-testid="img-ticket-attachment"
+                      onClick={() => window.open(ticket.imageUrl, '_blank')}
+                    />
+                    <p className="text-xs text-gray-500 p-2 bg-gray-50">Click to view full size</p>
+                  </div>
+                </div>
+              )}
+
               {ticket.category && (
                 <div>
                   <p className="text-sm text-gray-600 mb-2">Category</p>
                   <p data-testid="text-category" className="text-gray-900">
                     {ticket.category}
-                  </p>
-                </div>
-              )}
-
-              {ticket.plant && (
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">Plant</p>
-                  <p data-testid="text-plant" className="text-gray-900">
-                    {ticket.plant}
                   </p>
                 </div>
               )}
@@ -263,11 +282,7 @@ export default function TicketDetailPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4 text-sm text-gray-600 pt-4 border-t">
-                <div>
-                  <p className="font-medium">Created</p>
-                  <p>{new Date(ticket.createdAt).toLocaleString()}</p>
-                </div>
+              <div className="flex justify-end text-sm text-gray-600 pt-4 border-t">
                 <div>
                   <p className="font-medium">Assigned To</p>
                   <p>{ticket.assignedToId ? "Yes" : "Unassigned"}</p>
