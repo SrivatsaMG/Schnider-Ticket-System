@@ -228,14 +228,14 @@ export default function TicketDetailPage() {
               )}
 
               {user.role !== "employee" && (
-                <div className="pt-4 border-t">
+                <div className="pt-4 pb-20 border-t">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Update Status</label>
                     <Select value={ticket.status} onValueChange={handleUpdateStatus}>
                       <SelectTrigger data-testid="select-status">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent side="bottom" align="start">
                         <SelectItem value="open">Open</SelectItem>
                         <SelectItem value="inProgress">In Progress</SelectItem>
                         <SelectItem value="resolved">Resolved</SelectItem>
