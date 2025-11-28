@@ -3,6 +3,40 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, loginSchema, createTicketSchema, updateTicketSchema, ROLES, ROLE_PERMISSIONS } from "@shared/schema";
 import bcrypt from "bcryptjs";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+
+// Configure multer for file uploads
+const uploadDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage_config = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage: storage_config,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only image files are allowed (jpeg, jpg, png, gif, webp)"));
+    }
+  },
+});
 
 export async function registerRoutes(
   httpServer: Server,
@@ -159,7 +193,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/tickets", async (req, res) => {
+  app.post("/api/tickets", upload.single("image"), async (req, res) => {
     try {
       const userStr = req.query.user as string;
       if (!userStr) {
@@ -178,7 +212,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid input" });
       }
 
-      const ticket = await storage.createTicket(parsed.data, user.id);
+      // Get image URL if file was uploaded
+      const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+
+      const ticket = await storage.createTicket(parsed.data, user.id, imageUrl);
       res.status(201).json({ message: "Ticket created", ticket });
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to create ticket" });
