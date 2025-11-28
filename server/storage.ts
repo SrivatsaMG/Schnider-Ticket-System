@@ -360,12 +360,13 @@ export class SupabaseStorage implements IStorage {
 
   async getTicketReplies(ticketId: string): Promise<TicketReply[]> {
     if (this.useInMemory) {
-      return inMemoryReplies.get(ticketId) || [];
+      const replies = inMemoryReplies.get(ticketId) || [];
+      return Promise.resolve(replies);
     }
 
     const { data, error } = await supabase
       .from("ticket_replies")
-      .select("*")
+      .select("*, users:user_id(username)")
       .eq("ticket_id", ticketId)
       .order("created_at", { ascending: true });
 

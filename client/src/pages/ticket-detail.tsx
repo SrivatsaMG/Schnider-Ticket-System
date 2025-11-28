@@ -100,7 +100,15 @@ export default function TicketDetailPage() {
       const response = await fetch(`/api/tickets/${ticketId}/replies`);
       if (response.ok) {
         const data = await response.json();
-        setReplies(data);
+        const formattedReplies = data.map((reply: any) => ({
+          id: reply.id,
+          ticketId: reply.ticket_id,
+          userId: reply.user_id,
+          message: reply.message,
+          createdAt: reply.created_at,
+          userName: reply.userName || reply.user?.username || "Unknown User",
+        }));
+        setReplies(formattedReplies);
       }
     } catch (error) {
       console.log("Failed to load replies");

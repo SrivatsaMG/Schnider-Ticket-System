@@ -292,7 +292,22 @@ export async function registerRoutes(
   app.get("/api/tickets/:id/replies", async (req, res) => {
     try {
       const replies = await storage.getTicketReplies(req.params.id);
-      res.json(replies);
+      
+      // Enrich replies with usernames from storage
+      const enrichedReplies = await Promise.all(
+        replies.map(async (reply: any) => {
+          if (!reply.userName) {
+            const user = await storage.getUser(reply.userId || reply.user_id);
+            return {
+              ...reply,
+              userName: user?.username || "Unknown User",
+            };
+          }
+          return reply;
+        })
+      );
+
+      res.json(enrichedReplies);
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to fetch replies" });
     }
