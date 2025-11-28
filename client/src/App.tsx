@@ -12,6 +12,7 @@ import AdminDashboardPage from "@/pages/admin-dashboard";
 import AdminUsersPage from "@/pages/admin-users";
 import AdminPlantsPage from "@/pages/admin-plants";
 import AdminCreateUserPage from "@/pages/admin-create-user";
+import AdminEditUserPage from "@/pages/admin-edit-user";
 import ManagerCreateEmployeePage from "@/pages/manager-create-employee";
 import TicketsPage from "@/pages/tickets";
 import CreateTicketPage from "@/pages/create-ticket";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/admin-plants" component={AdminPlantsPage} />
       <Route path="/admin-manage-plant/:id" component={AdminManagePlantPage} />
       <Route path="/admin-create-user" component={AdminCreateUserPage} />
+      <Route path="/admin-edit-user/:id" component={AdminEditUserPage} />
       <Route path="/manager-create-employee" component={ManagerCreateEmployeePage} />
       <Route path="/tickets" component={TicketsPage} />
       <Route path="/create-ticket" component={CreateTicketPage} />
