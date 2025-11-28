@@ -66,18 +66,23 @@ export default function CreateTicketPage() {
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image must be less than 5MB");
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error("File must be less than 10MB");
         return;
       }
-      if (!file.type.startsWith("image/")) {
-        toast.error("Please select an image file");
+      const allowedExtensions = /\.(jpeg|jpg|png|gif|webp|pdf|doc|docx|xls|xlsx|txt|csv)$/i;
+      if (!allowedExtensions.test(file.name)) {
+        toast.error("Allowed: images, PDF, Word, Excel, TXT, CSV");
         return;
       }
       setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onload = () => setImagePreview(reader.result as string);
-      reader.readAsDataURL(file);
+      if (file.type.startsWith("image/")) {
+        const reader = new FileReader();
+        reader.onload = () => setImagePreview(reader.result as string);
+        reader.readAsDataURL(file);
+      } else {
+        setImagePreview(null);
+      }
     }
   };
 
@@ -356,43 +361,49 @@ export default function CreateTicketPage() {
                 )}
               </div>
 
-              {/* Image Upload */}
+              {/* File Upload */}
               <div className="space-y-3">
                 <Label className="text-base font-semibold text-gray-800">
-                  Attach Image (Optional)
+                  Attach File (Optional)
                 </Label>
-                <p className="text-sm text-gray-500">Upload an image related to this issue (max 5MB)</p>
+                <p className="text-sm text-gray-500">Upload a file related to this issue (max 10MB)</p>
                 
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept=".jpeg,.jpg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv"
                   onChange={handleImageSelect}
                   className="hidden"
-                  data-testid="input-image"
+                  data-testid="input-file"
                 />
                 
-                {!imagePreview ? (
+                {!selectedImage ? (
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all duration-200"
-                    data-testid="button-upload-image"
+                    data-testid="button-upload-file"
                   >
                     <Upload className="w-10 h-10 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-600 font-medium">Click to upload an image</p>
-                    <p className="text-sm text-gray-400 mt-1">JPEG, PNG, GIF, WebP (max 5MB)</p>
+                    <p className="text-gray-600 font-medium">Click to upload a file</p>
+                    <p className="text-sm text-gray-400 mt-1">Images, PDF, Word, Excel, TXT, CSV (max 10MB)</p>
                   </div>
                 ) : (
                   <div className="relative border-2 border-green-300 rounded-lg p-4 bg-green-50">
                     <div className="flex items-center gap-4">
-                      <div className="relative w-24 h-24 rounded-lg overflow-hidden border-2 border-gray-200">
-                        <img 
-                          src={imagePreview} 
-                          alt="Preview" 
-                          className="w-full h-full object-cover"
-                          data-testid="img-preview"
-                        />
-                      </div>
+                      {imagePreview ? (
+                        <div className="relative w-24 h-24 rounded-lg overflow-hidden border-2 border-gray-200">
+                          <img 
+                            src={imagePreview} 
+                            alt="Preview" 
+                            className="w-full h-full object-cover"
+                            data-testid="img-preview"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-24 h-24 rounded-lg border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
+                          <span className="text-2xl">📄</span>
+                        </div>
+                      )}
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <ImageIcon className="w-5 h-5 text-green-600" />
@@ -408,7 +419,7 @@ export default function CreateTicketPage() {
                         size="sm"
                         onClick={removeImage}
                         className="text-red-600 border-red-300 hover:bg-red-50"
-                        data-testid="button-remove-image"
+                        data-testid="button-remove-file"
                       >
                         <X className="w-4 h-4 mr-1" /> Remove
                       </Button>

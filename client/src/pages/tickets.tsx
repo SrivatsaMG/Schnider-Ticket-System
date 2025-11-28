@@ -154,7 +154,7 @@ export default function TicketsPage() {
                         )}
                         {ticket.imageUrl && (
                           <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-300">
-                            📷 Image
+                            📎 File
                           </Badge>
                         )}
                       </div>

@@ -247,21 +247,38 @@ export class SupabaseStorage implements IStorage {
 
   async getNextTicketNumber(): Promise<string> {
     if (this.useInMemory) {
-      ticketCounter++;
+      // Get the highest ticket number from existing tickets
+      const existingTickets = Array.from(inMemoryTickets.values());
+      let maxNumber = ticketCounter;
+      
+      for (const ticket of existingTickets) {
+        if (ticket.ticketNumber) {
+          const numPart = parseInt(ticket.ticketNumber.replace('TKT-', ''), 10);
+          if (!isNaN(numPart) && numPart > maxNumber) {
+            maxNumber = numPart;
+          }
+        }
+      }
+      
+      ticketCounter = maxNumber + 1;
       return `TKT-${String(ticketCounter).padStart(4, '0')}`;
     }
 
-    // For Supabase, get the count of existing tickets
-    const { count, error } = await supabase
+    // For Supabase, get the highest ticket number
+    const { data, error } = await supabase
       .from("tickets")
-      .select("*", { count: "exact", head: true });
+      .select("ticket_number")
+      .order("ticket_number", { ascending: false })
+      .limit(1);
 
-    if (error) {
+    if (error || !data || data.length === 0) {
       ticketCounter++;
       return `TKT-${String(ticketCounter).padStart(4, '0')}`;
     }
 
-    const nextNumber = (count || 0) + 1;
+    const lastTicketNumber = data[0].ticket_number;
+    const numPart = parseInt(lastTicketNumber.replace('TKT-', ''), 10);
+    const nextNumber = isNaN(numPart) ? 1 : numPart + 1;
     return `TKT-${String(nextNumber).padStart(4, '0')}`;
   }
 

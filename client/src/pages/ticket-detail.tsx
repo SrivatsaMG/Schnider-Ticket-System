@@ -240,17 +240,33 @@ export default function TicketDetailPage() {
 
               {ticket.imageUrl && (
                 <div>
-                  <p className="text-sm text-gray-600 mb-2">Attached Image</p>
-                  <div className="relative border-2 border-gray-200 rounded-lg overflow-hidden max-w-md">
-                    <img 
-                      src={ticket.imageUrl} 
-                      alt="Ticket attachment" 
-                      className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                      data-testid="img-ticket-attachment"
-                      onClick={() => window.open(ticket.imageUrl, '_blank')}
-                    />
-                    <p className="text-xs text-gray-500 p-2 bg-gray-50">Click to view full size</p>
-                  </div>
+                  <p className="text-sm text-gray-600 mb-2">Attached File</p>
+                  {/\.(jpeg|jpg|png|gif|webp)$/i.test(ticket.imageUrl) ? (
+                    <div className="relative border-2 border-gray-200 rounded-lg overflow-hidden max-w-md">
+                      <img 
+                        src={ticket.imageUrl} 
+                        alt="Ticket attachment" 
+                        className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                        data-testid="img-ticket-attachment"
+                        onClick={() => window.open(ticket.imageUrl, '_blank')}
+                      />
+                      <p className="text-xs text-gray-500 p-2 bg-gray-50">Click to view full size</p>
+                    </div>
+                  ) : (
+                    <a 
+                      href={ticket.imageUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-3 bg-blue-50 border-2 border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                      data-testid="link-ticket-attachment"
+                    >
+                      <span className="text-2xl">📄</span>
+                      <div>
+                        <p className="font-medium text-blue-700">Download Attachment</p>
+                        <p className="text-xs text-gray-500">{ticket.imageUrl.split('/').pop()}</p>
+                      </div>
+                    </a>
+                  )}
                 </div>
               )}
 
