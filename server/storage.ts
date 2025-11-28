@@ -41,6 +41,15 @@ function initDemoData() {
   const managerHashedPassword = bcrypt.hashSync("manager123", 10);
   const now = new Date().toISOString();
 
+  // Create demo plant first
+  const demoPlant = {
+    id: "plant-001",
+    name: "Plant A",
+    location: "Location A",
+    created_at: now,
+  };
+  inMemoryPlants.set(demoPlant.id, demoPlant);
+
   const demoAdmin: User = {
     id: "admin-001",
     username: "admin",
@@ -57,13 +66,14 @@ function initDemoData() {
     email: "manager@example.com",
     password: managerHashedPassword,
     role: ROLES.MANAGER,
+    plant: "Plant A",
     department: "Operations",
     createdAt: now,
   };
 
   inMemoryUsers.set(demoAdmin.id, demoAdmin);
   inMemoryUsers.set(demoManager.id, demoManager);
-  console.log("✓ Demo users initialized (Admin + Manager)");
+  console.log("✓ Demo users initialized (Admin + Manager assigned to Plant A)");
 }
 
 initDemoData();
