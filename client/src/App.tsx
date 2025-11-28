@@ -11,6 +11,7 @@ import DashboardPage from "@/pages/dashboard";
 import AdminDashboardPage from "@/pages/admin-dashboard";
 import TicketsPage from "@/pages/tickets";
 import CreateTicketPage from "@/pages/create-ticket";
+import TicketDetailPage from "@/pages/ticket-detail";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/admin-dashboard" component={AdminDashboardPage} />
       <Route path="/tickets" component={TicketsPage} />
       <Route path="/create-ticket" component={CreateTicketPage} />
+      <Route path="/ticket/:id" component={TicketDetailPage} />
       <Route component={NotFound} />
     </Switch>
   );

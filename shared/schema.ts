@@ -9,7 +9,7 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   isAdmin: boolean("is_admin").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
 export const tickets = pgTable("tickets", {
@@ -20,8 +20,8 @@ export const tickets = pgTable("tickets", {
   priority: text("priority").notNull().default("medium"),
   createdById: varchar("created_by_id").notNull(),
   assignedToId: varchar("assigned_to_id"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -47,9 +47,18 @@ export const createTicketSchema = z.object({
   priority: z.enum(["low", "medium", "high", "critical"]),
 });
 
+export const updateTicketSchema = z.object({
+  title: z.string().min(5).optional(),
+  description: z.string().min(10).optional(),
+  status: z.enum(["open", "inProgress", "resolved", "closed"]).optional(),
+  priority: z.enum(["low", "medium", "high", "critical"]).optional(),
+  assignedToId: z.string().optional().nullable(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type User = typeof users.$inferSelect;
 export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
+export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;

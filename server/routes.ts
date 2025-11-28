@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, loginSchema, createTicketSchema } from "@shared/schema";
+import { insertUserSchema, loginSchema, createTicketSchema, updateTicketSchema } from "@shared/schema";
 import bcrypt from "bcryptjs";
 
 export async function registerRoutes(
@@ -10,6 +10,7 @@ export async function registerRoutes(
 ): Promise<Server> {
   await storage.seedAdminUser();
 
+  // Auth Routes
   app.post("/api/auth/register", async (req, res) => {
     try {
       const parsed = insertUserSchema.safeParse(req.body);
@@ -96,31 +97,43 @@ export async function registerRoutes(
 
   app.get("/api/auth/me", async (req, res) => {
     try {
-      const userId = (req as any).userId;
-      if (!userId) {
+      const userStr = req.query.user as string;
+      if (!userStr) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const user = await storage.getUser(userId);
-      if (!user) {
+      const user = JSON.parse(userStr);
+      const userData = await storage.getUser(user.id);
+      if (!userData) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const { password, ...userWithoutPassword } = user;
+      const { password, ...userWithoutPassword } = userData;
       res.json(userWithoutPassword);
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to fetch user" });
     }
   });
 
-  // Ticket endpoints
+  app.get("/api/users", async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+      res.json(usersWithoutPasswords);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to fetch users" });
+    }
+  });
+
+  // Ticket Routes
   app.post("/api/tickets", async (req, res) => {
     try {
-      const user = JSON.parse(localStorage?.getItem?.("user") || "{}");
-      if (!user.id) {
+      const userStr = req.query.user as string;
+      if (!userStr) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      const user = JSON.parse(userStr);
       const parsed = createTicketSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid input" });
@@ -162,10 +175,38 @@ export async function registerRoutes(
 
   app.patch("/api/tickets/:id", async (req, res) => {
     try {
-      const ticket = await storage.updateTicket(req.params.id, req.body);
+      const parsed = updateTicketSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: "Invalid input" });
+      }
+
+      const ticket = await storage.updateTicket(req.params.id, parsed.data);
       res.json({ message: "Ticket updated", ticket });
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to update ticket" });
+    }
+  });
+
+  app.delete("/api/tickets/:id", async (req, res) => {
+    try {
+      await storage.deleteTicket(req.params.id);
+      res.json({ message: "Ticket deleted" });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to delete ticket" });
+    }
+  });
+
+  app.post("/api/tickets/:id/assign", async (req, res) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) {
+        return res.status(400).json({ message: "User ID required" });
+      }
+
+      const ticket = await storage.assignTicket(req.params.id, userId);
+      res.json({ message: "Ticket assigned", ticket });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to assign ticket" });
     }
   });
 

@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Ticket, type CreateTicketInput } from "@shared/schema";
+import { type User, type InsertUser, type Ticket, type CreateTicketInput, type UpdateTicketInput } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 
@@ -14,16 +14,34 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser, isAdmin?: boolean): Promise<User>;
   seedAdminUser(): Promise<void>;
   createTicket(ticket: CreateTicketInput, userId: string): Promise<Ticket>;
   getTickets(userId: string, isAdmin: boolean): Promise<Ticket[]>;
   getTicket(id: string): Promise<Ticket | undefined>;
-  updateTicket(id: string, updates: Partial<Ticket>): Promise<Ticket>;
+  updateTicket(id: string, updates: UpdateTicketInput): Promise<Ticket>;
+  deleteTicket(id: string): Promise<boolean>;
+  assignTicket(ticketId: string, userId: string): Promise<Ticket>;
 }
 
 const inMemoryUsers: Map<string, User> = new Map();
 const inMemoryTickets: Map<string, Ticket> = new Map();
+
+// Initialize with demo data
+function initDemoData() {
+  const demoAdmin: User = {
+    id: "admin-001",
+    username: "admin",
+    email: "admin@example.com",
+    password: bcrypt.hashSync("admin123", 10),
+    isAdmin: true,
+    createdAt: new Date().toISOString(),
+  };
+  inMemoryUsers.set(demoAdmin.id, demoAdmin);
+}
+
+initDemoData();
 
 export class SupabaseStorage implements IStorage {
   private useInMemory = false;
@@ -66,9 +84,24 @@ export class SupabaseStorage implements IStorage {
     return (data as User) || undefined;
   }
 
+  async getAllUsers(): Promise<User[]> {
+    if (this.useInMemory) {
+      return Array.from(inMemoryUsers.values());
+    }
+
+    const { data, error } = await supabase.from("users").select("*");
+
+    if (error) {
+      this.useInMemory = true;
+      return Array.from(inMemoryUsers.values());
+    }
+
+    return (data as User[]) || [];
+  }
+
   async createUser(insertUser: InsertUser, isAdmin = false): Promise<User> {
     const hashedPassword = await bcrypt.hash(insertUser.password, 10);
-    const id = Math.random().toString(36).substring(7);
+    const id = `user-${Date.now()}`;
     const createdAt = new Date().toISOString();
 
     const user: User = {
@@ -128,7 +161,7 @@ export class SupabaseStorage implements IStorage {
   }
 
   async createTicket(ticket: CreateTicketInput, userId: string): Promise<Ticket> {
-    const id = Math.random().toString(36).substring(7);
+    const id = `ticket-${Date.now()}`;
     const now = new Date().toISOString();
 
     const newTicket: Ticket = {
@@ -155,6 +188,7 @@ export class SupabaseStorage implements IStorage {
         description: ticket.description,
         priority: ticket.priority,
         created_by_id: userId,
+        status: "open",
       })
       .select()
       .single();
@@ -174,11 +208,13 @@ export class SupabaseStorage implements IStorage {
   async getTickets(userId: string, isAdmin: boolean): Promise<Ticket[]> {
     if (this.useInMemory) {
       if (isAdmin) {
-        return Array.from(inMemoryTickets.values());
+        return Array.from(inMemoryTickets.values()).sort(
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
       }
-      return Array.from(inMemoryTickets.values()).filter(
-        (t) => t.createdById === userId || t.assignedToId === userId
-      );
+      return Array.from(inMemoryTickets.values())
+        .filter((t) => t.createdById === userId || t.assignedToId === userId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     }
 
     let query = supabase.from("tickets").select("*");
@@ -223,18 +259,25 @@ export class SupabaseStorage implements IStorage {
     return data as Ticket;
   }
 
-  async updateTicket(id: string, updates: Partial<Ticket>): Promise<Ticket> {
+  async updateTicket(id: string, updates: UpdateTicketInput): Promise<Ticket> {
+    const now = new Date().toISOString();
+
     if (this.useInMemory) {
       const ticket = inMemoryTickets.get(id);
       if (!ticket) throw new Error("Ticket not found");
-      const updated = { ...ticket, ...updates, updatedAt: new Date().toISOString() };
+
+      const updated: Ticket = {
+        ...ticket,
+        ...updates,
+        updatedAt: now,
+      };
       inMemoryTickets.set(id, updated);
       return updated;
     }
 
     const { data, error } = await supabase
       .from("tickets")
-      .update(updates)
+      .update({ ...updates, updated_at: now })
       .eq("id", id)
       .select()
       .single();
@@ -244,6 +287,24 @@ export class SupabaseStorage implements IStorage {
     }
 
     return data as Ticket;
+  }
+
+  async deleteTicket(id: string): Promise<boolean> {
+    if (this.useInMemory) {
+      return inMemoryTickets.delete(id);
+    }
+
+    const { error } = await supabase.from("tickets").delete().eq("id", id);
+
+    if (error) {
+      throw new Error(`Failed to delete ticket: ${error.message}`);
+    }
+
+    return true;
+  }
+
+  async assignTicket(ticketId: string, userId: string): Promise<Ticket> {
+    return this.updateTicket(ticketId, { assignedToId: userId });
   }
 }
 
