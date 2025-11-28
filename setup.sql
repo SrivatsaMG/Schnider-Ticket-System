@@ -71,6 +71,7 @@ COMMENT ON COLUMN public.users.created_at IS 'Timestamp when user was created';
 -- ============================================================================
 CREATE TABLE public.tickets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ticket_number TEXT NOT NULL UNIQUE,
   title TEXT NOT NULL,
   description TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'General' CHECK (category IN ('General', 'Bug', 'Feature Request', 'Issue Report', 'Maintenance', 'Other')),
@@ -79,11 +80,13 @@ CREATE TABLE public.tickets (
   plant TEXT REFERENCES public.plants(name) ON DELETE SET NULL,
   created_by_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
   assigned_to_id UUID REFERENCES public.users(id) ON DELETE SET NULL,
+  image_url TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Add indexes for tickets
+CREATE INDEX idx_tickets_number ON public.tickets(ticket_number);
 CREATE INDEX idx_tickets_created_by ON public.tickets(created_by_id);
 CREATE INDEX idx_tickets_assigned_to ON public.tickets(assigned_to_id);
 CREATE INDEX idx_tickets_status ON public.tickets(status);
@@ -95,6 +98,7 @@ CREATE INDEX idx_tickets_created_at ON public.tickets(created_at DESC);
 -- Add comments for tickets table
 COMMENT ON TABLE public.tickets IS 'Production tickets/issues created by employees and managed by staff';
 COMMENT ON COLUMN public.tickets.id IS 'Unique identifier for the ticket';
+COMMENT ON COLUMN public.tickets.ticket_number IS 'Sequential ticket number (TKT-0001 format)';
 COMMENT ON COLUMN public.tickets.title IS 'Brief title of the ticket';
 COMMENT ON COLUMN public.tickets.description IS 'Detailed description of the issue';
 COMMENT ON COLUMN public.tickets.category IS 'Category of the ticket for organization';
@@ -103,6 +107,7 @@ COMMENT ON COLUMN public.tickets.priority IS 'Priority level for ticket resoluti
 COMMENT ON COLUMN public.tickets.plant IS 'Plant where the issue occurred';
 COMMENT ON COLUMN public.tickets.created_by_id IS 'User who created the ticket';
 COMMENT ON COLUMN public.tickets.assigned_to_id IS 'User assigned to resolve the ticket';
+COMMENT ON COLUMN public.tickets.image_url IS 'URL to attached file (image or document)';
 COMMENT ON COLUMN public.tickets.created_at IS 'Timestamp when ticket was created';
 COMMENT ON COLUMN public.tickets.updated_at IS 'Timestamp when ticket was last updated';
 
@@ -196,9 +201,16 @@ ON CONFLICT (email) DO NOTHING;
 -- All tables have been created successfully with:
 -- - plants: Production plants with manager assignments
 -- - users: System users with roles (admin, manager, employee)
--- - tickets: Production tickets/issues with categories and priorities
+-- - tickets: Production tickets/issues with categories, priorities, ticket numbers, and file attachments
 -- - ticket_replies: Conversation threads on tickets
 -- - ticket_notifications: Real-time notifications for replies and activity
+--
+-- TICKET SYSTEM FEATURES:
+-- - Each ticket gets a unique sequential number (TKT-0001, TKT-0002, etc.)
+-- - File attachments support: images (JPEG, PNG, GIF, WebP) and documents (PDF, Word, Excel, TXT, CSV)
+-- - Maximum file size: 10MB per attachment
+-- - All roles (admin, manager, employee) can create and attach files to tickets
+-- - Managers see only tickets from their assigned plant
 --
 -- NOTIFICATION SYSTEM:
 -- When a reply is posted to a ticket:
