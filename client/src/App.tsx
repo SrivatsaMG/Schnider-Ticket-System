@@ -1,131 +1,57 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
+-- Production Ticket Management System - Complete Setup
 
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-  department?: string;
-  createdAt: string;
-}
+DROP TABLE IF EXISTS public.ticket_replies CASCADE;
+DROP TABLE IF EXISTS public.tickets CASCADE;
+DROP TABLE IF EXISTS public.users CASCADE;
 
-export default function AdminUsersPage() {
-  const [, setLocation] = useLocation();
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+-- Users table
+CREATE TABLE public.users (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  username TEXT NOT NULL UNIQUE,
+  email TEXT NOT NULL UNIQUE,
+  password TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'employee',
+  plant TEXT,
+  department TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      if (parsedUser.role === "admin") {
-        setCurrentUser(parsedUser);
-        fetchUsers(parsedUser);
-      } else {
-        toast.error("Admin access required");
-        setLocation("/dashboard");
-      }
-    } else {
-      setLocation("/login");
-    }
-  }, [setLocation]);
+-- Tickets table
+CREATE TABLE public.tickets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'General',
+  status TEXT DEFAULT 'open',
+  priority TEXT DEFAULT 'medium',
+  plant TEXT,
+  created_by_id UUID NOT NULL,
+  assigned_to_id UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-  const fetchUsers = async (user: User) => {
-    try {
-      const response = await fetch(`/api/users?user=${encodeURIComponent(JSON.stringify(user))}`);
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
-      } else {
-        toast.error("Failed to load users");
-      }
-    } catch (error) {
-      toast.error("Failed to load users");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+-- Ticket replies table
+CREATE TABLE public.ticket_replies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ticket_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
-  const roleColors = {
-    admin: "bg-purple-100 text-purple-800",
-    manager: "bg-blue-100 text-blue-800",
-    employee: "bg-green-100 text-green-800",
-  };
+-- Indexes
+CREATE INDEX idx_users_email ON public.users(email);
+CREATE INDEX idx_users_role ON public.users(role);
+CREATE INDEX idx_users_plant ON public.users(plant);
+CREATE INDEX idx_tickets_created_by ON public.tickets(created_by_id);
+CREATE INDEX idx_tickets_assigned_to ON public.tickets(assigned_to_id);
+CREATE INDEX idx_tickets_status ON public.tickets(status);
+CREATE INDEX idx_tickets_plant ON public.tickets(plant);
+CREATE INDEX idx_replies_ticket ON public.ticket_replies(ticket_id);
 
-  if (isLoading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
-  }
-
-  if (!currentUser) {
-    return null;
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-100 p-8">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-purple-900">User Management</h1>
-            <p className="text-purple-600 mt-1">Manage all system users</p>
-          </div>
-          <Button
-            data-testid="button-back"
-            onClick={() => setLocation("/admin-dashboard")}
-            variant="outline"
-          >
-            ← Back to Dashboard
-          </Button>
-        </div>
-
-        {users.length === 0 ? (
-          <Card className="shadow-lg">
-            <CardContent className="pt-12 text-center">
-              <p className="text-gray-500">No users found.</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {users.map((user) => (
-              <Card key={user.id} data-testid={`card-user-${user.id}`} className="shadow-lg">
-                <CardContent className="pt-6">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 data-testid={`text-username-${user.id}`} className="text-lg font-semibold">
-                        {user.username}
-                      </h3>
-                      <p data-testid={`text-email-${user.id}`} className="text-sm text-gray-600">
-                        {user.email}
-                      </p>
-                      {user.department && (
-                        <p data-testid={`text-department-${user.id}`} className="text-sm text-gray-600">
-                          Department: {user.department}
-                        </p>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      <Badge
-                        data-testid={`badge-role-${user.id}`}
-                        className={roleColors[user.role as keyof typeof roleColors] || "bg-gray-100 text-gray-800"}
-                      >
-                        {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                      </Badge>
-                      <p data-testid={`text-created-${user.id}`} className="text-xs text-gray-500 mt-2">
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+-- Insert demo users
+INSERT INTO public.users (username, email, password, role, plant, department) VALUES
+('admin', 'admin@example.com', '$2b$10$etuccpBpRbbdx6IsKk3TTuy4uUEOzcVpCdrU1lg1BWXYXa4OzkKnG', 'admin', NULL, 'Management'),
+('manager', 'manager@example.com', '$2b$10$TuguM11YOFL24lTpg7PmfeYwzJlgtTLXuXocYVKfuUbEM.bUOSyNq', 'manager', 'Plant A', 'Operations')
+ON CONFLICT (email) DO NOTHING;

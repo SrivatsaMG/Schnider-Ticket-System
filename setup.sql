@@ -1,105 +1,58 @@
--- ============================================================
--- PRODUCTION TICKET MANAGEMENT SYSTEM
--- Complete One-File Database Setup
--- Copy ALL code below and run in your SQL compiler (Supabase, pgAdmin, etc.)
--- ============================================================
+-- PRODUCTION TICKET MANAGEMENT SYSTEM - COMPLETE SETUP
+-- Run this SQL file once in Supabase SQL Editor
 
--- ============================================================
--- STEP 1: DROP EXISTING TABLES (if starting fresh)
--- ============================================================
+DROP TABLE IF EXISTS public.ticket_replies CASCADE;
 DROP TABLE IF EXISTS public.tickets CASCADE;
 DROP TABLE IF EXISTS public.users CASCADE;
 
--- ============================================================
--- STEP 2: CREATE USERS TABLE
--- ============================================================
-CREATE TABLE IF NOT EXISTS public.users (
+-- Users table with plant support
+CREATE TABLE public.users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username TEXT NOT NULL UNIQUE,
   email TEXT NOT NULL UNIQUE,
   password TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'employee',
+  plant TEXT,
   department TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- ============================================================
--- STEP 3: CREATE TICKETS TABLE
--- ============================================================
-CREATE TABLE IF NOT EXISTS public.tickets (
+-- Tickets table with categories and plant tracking
+CREATE TABLE public.tickets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   description TEXT NOT NULL,
+  category TEXT NOT NULL DEFAULT 'General',
   status TEXT DEFAULT 'open',
   priority TEXT DEFAULT 'medium',
+  plant TEXT,
   created_by_id UUID NOT NULL,
   assigned_to_id UUID,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- ============================================================
--- STEP 4: CREATE INDEXES FOR PERFORMANCE
--- ============================================================
-CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
-CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
-CREATE INDEX IF NOT EXISTS idx_users_department ON public.users(department);
-CREATE INDEX IF NOT EXISTS idx_tickets_created_by ON public.tickets(created_by_id);
-CREATE INDEX IF NOT EXISTS idx_tickets_assigned_to ON public.tickets(assigned_to_id);
-CREATE INDEX IF NOT EXISTS idx_tickets_status ON public.tickets(status);
-CREATE INDEX IF NOT EXISTS idx_tickets_priority ON public.tickets(priority);
-CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON public.tickets(created_at DESC);
+-- Ticket replies for conversation thread
+CREATE TABLE public.ticket_replies (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  ticket_id UUID NOT NULL,
+  user_id UUID NOT NULL,
+  message TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
--- ============================================================
--- STEP 5: INSERT ADMIN USER
--- ============================================================
--- Email: admin@example.com
--- Password: admin123
-INSERT INTO public.users (username, email, password, role, department)
-VALUES (
-  'admin',
-  'admin@example.com',
-  '$2b$10$etuccpBpRbbdx6IsKk3TTuy4uUEOzcVpCdrU1lg1BWXYXa4OzkKnG',
-  'admin',
-  'Management'
-)
+-- Performance indexes
+CREATE INDEX idx_users_email ON public.users(email);
+CREATE INDEX idx_users_role ON public.users(role);
+CREATE INDEX idx_users_plant ON public.users(plant);
+CREATE INDEX idx_tickets_created_by ON public.tickets(created_by_id);
+CREATE INDEX idx_tickets_assigned_to ON public.tickets(assigned_to_id);
+CREATE INDEX idx_tickets_status ON public.tickets(status);
+CREATE INDEX idx_tickets_plant ON public.tickets(plant);
+CREATE INDEX idx_replies_ticket ON public.ticket_replies(ticket_id);
+
+-- Demo users
+INSERT INTO public.users (username, email, password, role, plant, department) VALUES
+('admin', 'admin@example.com', '$2b$10$etuccpBpRbbdx6IsKk3TTuy4uUEOzcVpCdrU1lg1BWXYXa4OzkKnG', 'admin', NULL, 'Management'),
+('manager', 'manager@example.com', '$2b$10$TuguM11YOFL24lTpg7PmfeYwzJlgtTLXuXocYVKfuUbEM.bUOSyNq', 'manager', 'Plant A', 'Operations')
 ON CONFLICT (email) DO NOTHING;
-
--- ============================================================
--- STEP 6: INSERT MANAGER USER
--- ============================================================
--- Email: manager@example.com
--- Password: manager123
-INSERT INTO public.users (username, email, password, role, department)
-VALUES (
-  'manager',
-  'manager@example.com',
-  '$2b$10$TuguM11YOFL24lTpg7PmfeYwzJlgtTLXuXocYVKfuUbEM.bUOSyNq',
-  'manager',
-  'Operations'
-)
-ON CONFLICT (email) DO NOTHING;
-
--- ============================================================
--- VERIFICATION QUERIES (Optional - Run to verify setup)
--- ============================================================
--- SELECT COUNT(*) as total_users FROM public.users;
--- SELECT username, email, role FROM public.users;
--- SELECT * FROM public.tickets;
-
--- ============================================================
--- SETUP COMPLETE!
--- ============================================================
--- Your database is now ready with:
--- ✓ Users table (with role support)
--- ✓ Tickets table (full ticket management)
--- ✓ All indexes (for performance)
--- ✓ Demo Admin account (admin@example.com / admin123)
--- ✓ Demo Manager account (manager@example.com / manager123)
---
--- Next Steps:
--- 1. Create .env.local with your Supabase credentials
--- 2. Run: npm install && npm run dev
--- 3. Go to: http://localhost:5000
--- 4. Login with admin@example.com / admin123
--- ============================================================

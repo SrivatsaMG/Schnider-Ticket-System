@@ -132,7 +132,14 @@ export default function AdminDashboardPage() {
                     onClick={() => setLocation("/admin-users")}
                     className="w-full bg-blue-600 hover:bg-blue-700"
                   >
-                    Manage Users
+                    Manage Users & Plant Managers
+                  </Button>
+                  <Button
+                    data-testid="button-profile"
+                    onClick={() => setLocation("/profile")}
+                    className="w-full bg-gray-600 hover:bg-gray-700"
+                  >
+                    View Profile
                   </Button>
                 </div>
               </div>
