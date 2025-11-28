@@ -2,8 +2,10 @@
    PRODUCTION TICKET MANAGEMENT SYSTEM - QUICK START
 ════════════════════════════════════════════════════════════════════
 
-1. RUN THE SQL
-   ✓ Open: database.sql
+✅ JUST ONE SQL FILE - setup.sql
+
+1. RUN THE SQL (ONE TIME ONLY)
+   ✓ Open: setup.sql
    ✓ Copy ALL code
    ✓ Paste into Supabase SQL Editor (or your SQL tool)
    ✓ Click RUN
@@ -26,13 +28,13 @@
    ✓ Click "Login"
 
 ════════════════════════════════════════════════════════════════════
-   DEMO ACCOUNTS (Ready to use after running SQL)
+   PRE-LOADED DEMO ACCOUNTS (Ready to use!)
 ════════════════════════════════════════════════════════════════════
 
 ADMIN:
   Email: admin@example.com
   Password: admin123
-  Access: Full system
+  Access: Full system control
 
 MANAGER:
   Email: manager@example.com
@@ -41,17 +43,14 @@ MANAGER:
 
 EMPLOYEE:
   Register yourself on signup page
-  Access: Personal tickets
+  Access: Personal tickets only
 
 ════════════════════════════════════════════════════════════════════
-   FILES YOU NEED
+   ONE FILE - setup.sql
 ════════════════════════════════════════════════════════════════════
 
-database.sql ........... SQL setup (copy to SQL editor)
-.env.local ............. Your Supabase credentials
-SETUP_GUIDE.md ......... Detailed setup instructions
-README.md .............. Full documentation
-ROLES.md ............... Role permissions
+That's it! All tables, indexes, and demo data in ONE file.
+No multiple SQL queries needed!
 
 ════════════════════════════════════════════════════════════════════
    THAT'S IT! You're ready to use your ticket system!
