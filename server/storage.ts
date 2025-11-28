@@ -251,9 +251,9 @@ export class SupabaseStorage implements IStorage {
     return (data as unknown as Ticket);
   }
 
-  async getTickets(userId: string, role: string): Promise<Ticket[]> {
+  async getTickets(userId: string, role: string, userPlant?: string): Promise<Ticket[]> {
     if (this.useInMemory) {
-      if (role === ROLES.ADMIN || role === ROLES.MANAGER) {
+      if (role === ROLES.ADMIN) {
         return Array.from(inMemoryTickets.values()).sort(
           (a, b) => {
             const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt;
@@ -261,6 +261,15 @@ export class SupabaseStorage implements IStorage {
             return dateB.getTime() - dateA.getTime();
           }
         );
+      }
+      if (role === ROLES.MANAGER && userPlant) {
+        return Array.from(inMemoryTickets.values())
+          .filter((t) => t.plant === userPlant)
+          .sort((a, b) => {
+            const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt;
+            const dateB = typeof b.createdAt === 'string' ? new Date(b.createdAt) : b.createdAt;
+            return dateB.getTime() - dateA.getTime();
+          });
       }
       return Array.from(inMemoryTickets.values())
         .filter((t) => t.createdById === userId || t.assignedToId === userId)
@@ -273,7 +282,13 @@ export class SupabaseStorage implements IStorage {
 
     let query = supabase.from("tickets").select("*");
 
-    if (role === ROLES.EMPLOYEE) {
+    if (role === ROLES.ADMIN) {
+      // Admin sees all tickets
+    } else if (role === ROLES.MANAGER && userPlant) {
+      // Manager only sees tickets from their assigned plant
+      query = query.eq("plant", userPlant);
+    } else if (role === ROLES.EMPLOYEE) {
+      // Employee sees their own tickets or assigned tickets
       query = query.or(`created_by_id.eq.${userId},assigned_to_id.eq.${userId}`);
     }
 
@@ -281,8 +296,11 @@ export class SupabaseStorage implements IStorage {
 
     if (error) {
       this.useInMemory = true;
-      if (role === ROLES.ADMIN || role === ROLES.MANAGER) {
+      if (role === ROLES.ADMIN) {
         return Array.from(inMemoryTickets.values());
+      }
+      if (role === ROLES.MANAGER && userPlant) {
+        return Array.from(inMemoryTickets.values()).filter((t) => t.plant === userPlant);
       }
       return Array.from(inMemoryTickets.values()).filter(
         (t) => t.createdById === userId || t.assignedToId === userId

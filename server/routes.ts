@@ -140,7 +140,7 @@ export async function registerRoutes(
       }
 
       const user = JSON.parse(userStr);
-      const tickets = await storage.getTickets(user.id, user.role);
+      const tickets = await storage.getTickets(user.id, user.role, user.plant);
       res.json(tickets);
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to fetch tickets" });
