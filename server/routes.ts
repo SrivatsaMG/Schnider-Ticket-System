@@ -254,5 +254,35 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/tickets/:id/replies", async (req, res) => {
+    try {
+      const replies = await storage.getTicketReplies(req.params.id);
+      res.json(replies);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to fetch replies" });
+    }
+  });
+
+  app.post("/api/tickets/:id/replies", async (req, res) => {
+    try {
+      const userStr = req.query.user as string;
+      if (!userStr) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = JSON.parse(userStr);
+      const { message } = req.body;
+
+      if (!message || !message.trim()) {
+        return res.status(400).json({ message: "Message cannot be empty" });
+      }
+
+      const reply = await storage.createReply(req.params.id, user.id, message);
+      res.status(201).json({ message: "Reply created", reply: { ...reply, userName: user.username } });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to create reply" });
+    }
+  });
+
   return httpServer;
 }

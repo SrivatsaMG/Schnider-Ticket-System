@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Ticket, type CreateTicketInput, type UpdateTicketInput, ROLES } from "@shared/schema";
+import { type User, type InsertUser, type Ticket, type TicketReply, type CreateTicketInput, type UpdateTicketInput, ROLES } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 
@@ -23,10 +23,13 @@ export interface IStorage {
   updateTicket(id: string, updates: UpdateTicketInput): Promise<Ticket>;
   deleteTicket(id: string): Promise<boolean>;
   assignTicket(ticketId: string, userId: string): Promise<Ticket>;
+  getTicketReplies(ticketId: string): Promise<TicketReply[]>;
+  createReply(ticketId: string, userId: string, message: string): Promise<TicketReply>;
 }
 
 const inMemoryUsers: Map<string, User> = new Map();
 const inMemoryTickets: Map<string, Ticket> = new Map();
+const inMemoryReplies: Map<string, TicketReply[]> = new Map();
 
 function initDemoData() {
   const adminHashedPassword = bcrypt.hashSync("admin123", 10);
@@ -315,6 +318,64 @@ export class SupabaseStorage implements IStorage {
 
   async assignTicket(ticketId: string, userId: string): Promise<Ticket> {
     return this.updateTicket(ticketId, { assignedToId: userId });
+  }
+
+  async getTicketReplies(ticketId: string): Promise<TicketReply[]> {
+    if (this.useInMemory) {
+      return inMemoryReplies.get(ticketId) || [];
+    }
+
+    const { data, error } = await supabase
+      .from("ticket_replies")
+      .select("*")
+      .eq("ticket_id", ticketId)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      return inMemoryReplies.get(ticketId) || [];
+    }
+
+    return ((data as unknown as TicketReply[]) || []);
+  }
+
+  async createReply(ticketId: string, userId: string, message: string): Promise<TicketReply> {
+    const id = `reply-${Date.now()}`;
+    const now = new Date().toISOString();
+
+    const newReply: TicketReply = {
+      id,
+      ticketId,
+      userId,
+      message,
+      createdAt: now,
+    };
+
+    if (this.useInMemory) {
+      const ticketReplies = inMemoryReplies.get(ticketId) || [];
+      ticketReplies.push(newReply);
+      inMemoryReplies.set(ticketId, ticketReplies);
+      return newReply;
+    }
+
+    const { data, error } = await supabase
+      .from("ticket_replies")
+      .insert({
+        ticket_id: ticketId,
+        user_id: userId,
+        message: message,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      this.useInMemory = true;
+      const ticketReplies = inMemoryReplies.get(ticketId) || [];
+      ticketReplies.push(newReply);
+      inMemoryReplies.set(ticketId, ticketReplies);
+      return newReply;
+    }
+
+    return (data as unknown as TicketReply);
   }
 }
 
