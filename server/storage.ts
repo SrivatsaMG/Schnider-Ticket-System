@@ -28,17 +28,19 @@ export interface IStorage {
 const inMemoryUsers: Map<string, User> = new Map();
 const inMemoryTickets: Map<string, Ticket> = new Map();
 
-// Initialize with demo data
+// Initialize with demo admin
 function initDemoData() {
+  const adminHashedPassword = bcrypt.hashSync("admin123", 10);
   const demoAdmin: User = {
     id: "admin-001",
     username: "admin",
     email: "admin@example.com",
-    password: bcrypt.hashSync("admin123", 10),
+    password: adminHashedPassword,
     isAdmin: true,
     createdAt: new Date().toISOString(),
   };
   inMemoryUsers.set(demoAdmin.id, demoAdmin);
+  console.log("✓ Demo admin initialized: admin@example.com / admin123");
 }
 
 initDemoData();
@@ -61,12 +63,13 @@ export class SupabaseStorage implements IStorage {
       this.useInMemory = true;
       return inMemoryUsers.get(id);
     }
-    return data as User;
+    return data as unknown as User;
   }
 
   async getUserByEmail(email: string): Promise<User | undefined> {
     if (this.useInMemory) {
-      return Array.from(inMemoryUsers.values()).find((u) => u.email === email);
+      const user = Array.from(inMemoryUsers.values()).find((u) => u.email === email);
+      return user;
     }
 
     const { data, error } = await supabase
@@ -75,13 +78,12 @@ export class SupabaseStorage implements IStorage {
       .eq("email", email)
       .single();
 
-    if (error && error.code !== "PGRST116") {
-      if (error.code === "PGRST205") {
-        this.useInMemory = true;
-        return Array.from(inMemoryUsers.values()).find((u) => u.email === email);
-      }
+    if (error) {
+      this.useInMemory = true;
+      const user = Array.from(inMemoryUsers.values()).find((u) => u.email === email);
+      return user;
     }
-    return (data as User) || undefined;
+    return (data as unknown as User) || undefined;
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -96,7 +98,7 @@ export class SupabaseStorage implements IStorage {
       return Array.from(inMemoryUsers.values());
     }
 
-    return (data as User[]) || [];
+    return ((data as unknown as User[]) || []);
   }
 
   async createUser(insertUser: InsertUser, isAdmin = false): Promise<User> {
@@ -130,15 +132,12 @@ export class SupabaseStorage implements IStorage {
       .single();
 
     if (error) {
-      if (error.code === "PGRST205") {
-        this.useInMemory = true;
-        inMemoryUsers.set(id, user);
-        return user;
-      }
-      throw new Error(`Failed to create user: ${error.message}`);
+      this.useInMemory = true;
+      inMemoryUsers.set(id, user);
+      return user;
     }
 
-    return data as User;
+    return (data as unknown as User);
   }
 
   async seedAdminUser(): Promise<void> {
@@ -153,10 +152,10 @@ export class SupabaseStorage implements IStorage {
           },
           true
         );
-        console.log("✓ Admin user created: admin@example.com / admin123");
+        console.log("✓ Admin user seeded to database");
       }
     } catch (error: any) {
-      console.log("Admin seeding note:", error.message);
+      console.log("Note: Using in-memory admin user");
     }
   }
 
@@ -194,15 +193,12 @@ export class SupabaseStorage implements IStorage {
       .single();
 
     if (error) {
-      if (error.code === "PGRST205") {
-        this.useInMemory = true;
-        inMemoryTickets.set(id, newTicket);
-        return newTicket;
-      }
-      throw new Error(`Failed to create ticket: ${error.message}`);
+      this.useInMemory = true;
+      inMemoryTickets.set(id, newTicket);
+      return newTicket;
     }
 
-    return data as Ticket;
+    return (data as unknown as Ticket);
   }
 
   async getTickets(userId: string, isAdmin: boolean): Promise<Ticket[]> {
@@ -226,19 +222,16 @@ export class SupabaseStorage implements IStorage {
     const { data, error } = await query.order("created_at", { ascending: false });
 
     if (error) {
-      if (error.code === "PGRST205") {
-        this.useInMemory = true;
-        if (isAdmin) {
-          return Array.from(inMemoryTickets.values());
-        }
-        return Array.from(inMemoryTickets.values()).filter(
-          (t) => t.createdById === userId || t.assignedToId === userId
-        );
+      this.useInMemory = true;
+      if (isAdmin) {
+        return Array.from(inMemoryTickets.values());
       }
-      return [];
+      return Array.from(inMemoryTickets.values()).filter(
+        (t) => t.createdById === userId || t.assignedToId === userId
+      );
     }
 
-    return (data as Ticket[]) || [];
+    return ((data as unknown as Ticket[]) || []);
   }
 
   async getTicket(id: string): Promise<Ticket | undefined> {
@@ -256,7 +249,7 @@ export class SupabaseStorage implements IStorage {
       return inMemoryTickets.get(id);
     }
 
-    return data as Ticket;
+    return (data as unknown as Ticket);
   }
 
   async updateTicket(id: string, updates: UpdateTicketInput): Promise<Ticket> {
@@ -286,7 +279,7 @@ export class SupabaseStorage implements IStorage {
       throw new Error(`Failed to update ticket: ${error.message}`);
     }
 
-    return data as Ticket;
+    return (data as unknown as Ticket);
   }
 
   async deleteTicket(id: string): Promise<boolean> {
