@@ -1,38 +1,69 @@
 import { type User, type InsertUser } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { createClient } from "@supabase/supabase-js";
+import bcrypt from "bcryptjs";
 
-// modify the interface with any CRUD methods
-// you might need
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error("Missing Supabase credentials");
+}
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 }
 
-export class MemStorage implements IStorage {
-  private users: Map<string, User>;
-
-  constructor() {
-    this.users = new Map();
-  }
-
+export class SupabaseStorage implements IStorage {
   async getUser(id: string): Promise<User | undefined> {
-    return this.users.get(id);
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching user:", error);
+      return undefined;
+    }
+    return data as User;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", email)
+      .single();
+
+    if (error && error.code !== "PGRST116") {
+      console.error("Error fetching user by email:", error);
+    }
+    return (data as User) || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = randomUUID();
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
-    return user;
+    const hashedPassword = await bcrypt.hash(insertUser.password, 10);
+
+    const { data, error } = await supabase
+      .from("users")
+      .insert({
+        username: insertUser.username,
+        email: insertUser.email,
+        password: hashedPassword,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to create user: ${error.message}`);
+    }
+
+    return data as User;
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new SupabaseStorage();
