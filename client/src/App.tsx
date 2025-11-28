@@ -9,6 +9,8 @@ import AdminLoginPage from "@/pages/admin-login";
 import RegisterPage from "@/pages/register";
 import DashboardPage from "@/pages/dashboard";
 import AdminDashboardPage from "@/pages/admin-dashboard";
+import TicketsPage from "@/pages/tickets";
+import CreateTicketPage from "@/pages/create-ticket";
 
 function Router() {
   return (
@@ -19,6 +21,8 @@ function Router() {
       <Route path="/register" component={RegisterPage} />
       <Route path="/dashboard" component={DashboardPage} />
       <Route path="/admin-dashboard" component={AdminDashboardPage} />
+      <Route path="/tickets" component={TicketsPage} />
+      <Route path="/create-ticket" component={CreateTicketPage} />
       <Route component={NotFound} />
     </Switch>
   );

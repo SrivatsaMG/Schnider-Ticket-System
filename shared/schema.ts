@@ -12,10 +12,28 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const tickets = pgTable("tickets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: text("status").notNull().default("open"),
+  priority: text("priority").notNull().default("medium"),
+  createdById: varchar("created_by_id").notNull(),
+  assignedToId: varchar("assigned_to_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   email: true,
   password: true,
+});
+
+export const insertTicketSchema = createInsertSchema(tickets).pick({
+  title: true,
+  description: true,
+  priority: true,
 });
 
 export const loginSchema = z.object({
@@ -23,6 +41,15 @@ export const loginSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
+export const createTicketSchema = z.object({
+  title: z.string().min(5, "Title must be at least 5 characters"),
+  description: z.string().min(10, "Description must be at least 10 characters"),
+  priority: z.enum(["low", "medium", "high", "critical"]),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type User = typeof users.$inferSelect;
+export type Ticket = typeof tickets.$inferSelect;
+export type InsertTicket = z.infer<typeof insertTicketSchema>;
+export type CreateTicketInput = z.infer<typeof createTicketSchema>;

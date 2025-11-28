@@ -1,4 +1,4 @@
-import { type User, type InsertUser } from "@shared/schema";
+import { type User, type InsertUser, type Ticket, type CreateTicketInput } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 
@@ -16,10 +16,14 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser, isAdmin?: boolean): Promise<User>;
   seedAdminUser(): Promise<void>;
+  createTicket(ticket: CreateTicketInput, userId: string): Promise<Ticket>;
+  getTickets(userId: string, isAdmin: boolean): Promise<Ticket[]>;
+  getTicket(id: string): Promise<Ticket | undefined>;
+  updateTicket(id: string, updates: Partial<Ticket>): Promise<Ticket>;
 }
 
-// In-memory fallback storage when database is not available
 const inMemoryUsers: Map<string, User> = new Map();
+const inMemoryTickets: Map<string, Ticket> = new Map();
 
 export class SupabaseStorage implements IStorage {
   private useInMemory = false;
@@ -36,7 +40,6 @@ export class SupabaseStorage implements IStorage {
       .single();
 
     if (error) {
-      console.error("Switching to in-memory storage:", error.message);
       this.useInMemory = true;
       return inMemoryUsers.get(id);
     }
@@ -56,11 +59,9 @@ export class SupabaseStorage implements IStorage {
 
     if (error && error.code !== "PGRST116") {
       if (error.code === "PGRST205") {
-        console.log("Database table not found. Using in-memory storage.");
         this.useInMemory = true;
         return Array.from(inMemoryUsers.values()).find((u) => u.email === email);
       }
-      console.error("Error fetching user by email:", error);
     }
     return (data as User) || undefined;
   }
@@ -97,7 +98,6 @@ export class SupabaseStorage implements IStorage {
 
     if (error) {
       if (error.code === "PGRST205") {
-        console.log("Database table not found. Using in-memory storage.");
         this.useInMemory = true;
         inMemoryUsers.set(id, user);
         return user;
@@ -125,6 +125,125 @@ export class SupabaseStorage implements IStorage {
     } catch (error: any) {
       console.log("Admin seeding note:", error.message);
     }
+  }
+
+  async createTicket(ticket: CreateTicketInput, userId: string): Promise<Ticket> {
+    const id = Math.random().toString(36).substring(7);
+    const now = new Date().toISOString();
+
+    const newTicket: Ticket = {
+      id,
+      title: ticket.title,
+      description: ticket.description,
+      status: "open",
+      priority: ticket.priority,
+      createdById: userId,
+      assignedToId: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (this.useInMemory) {
+      inMemoryTickets.set(id, newTicket);
+      return newTicket;
+    }
+
+    const { data, error } = await supabase
+      .from("tickets")
+      .insert({
+        title: ticket.title,
+        description: ticket.description,
+        priority: ticket.priority,
+        created_by_id: userId,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === "PGRST205") {
+        this.useInMemory = true;
+        inMemoryTickets.set(id, newTicket);
+        return newTicket;
+      }
+      throw new Error(`Failed to create ticket: ${error.message}`);
+    }
+
+    return data as Ticket;
+  }
+
+  async getTickets(userId: string, isAdmin: boolean): Promise<Ticket[]> {
+    if (this.useInMemory) {
+      if (isAdmin) {
+        return Array.from(inMemoryTickets.values());
+      }
+      return Array.from(inMemoryTickets.values()).filter(
+        (t) => t.createdById === userId || t.assignedToId === userId
+      );
+    }
+
+    let query = supabase.from("tickets").select("*");
+
+    if (!isAdmin) {
+      query = query.or(`created_by_id.eq.${userId},assigned_to_id.eq.${userId}`);
+    }
+
+    const { data, error } = await query.order("created_at", { ascending: false });
+
+    if (error) {
+      if (error.code === "PGRST205") {
+        this.useInMemory = true;
+        if (isAdmin) {
+          return Array.from(inMemoryTickets.values());
+        }
+        return Array.from(inMemoryTickets.values()).filter(
+          (t) => t.createdById === userId || t.assignedToId === userId
+        );
+      }
+      return [];
+    }
+
+    return (data as Ticket[]) || [];
+  }
+
+  async getTicket(id: string): Promise<Ticket | undefined> {
+    if (this.useInMemory) {
+      return inMemoryTickets.get(id);
+    }
+
+    const { data, error } = await supabase
+      .from("tickets")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) {
+      return inMemoryTickets.get(id);
+    }
+
+    return data as Ticket;
+  }
+
+  async updateTicket(id: string, updates: Partial<Ticket>): Promise<Ticket> {
+    if (this.useInMemory) {
+      const ticket = inMemoryTickets.get(id);
+      if (!ticket) throw new Error("Ticket not found");
+      const updated = { ...ticket, ...updates, updatedAt: new Date().toISOString() };
+      inMemoryTickets.set(id, updated);
+      return updated;
+    }
+
+    const { data, error } = await supabase
+      .from("tickets")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update ticket: ${error.message}`);
+    }
+
+    return data as Ticket;
   }
 }
 
