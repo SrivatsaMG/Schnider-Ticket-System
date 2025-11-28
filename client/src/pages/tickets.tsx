@@ -21,7 +21,9 @@ interface User {
   id: string;
   username: string;
   email: string;
-  isAdmin: boolean;
+  role: string;
+  department?: string;
+  createdAt: string;
 }
 
 const priorityColor = {
@@ -34,6 +36,7 @@ const priorityColor = {
 const statusColor = {
   open: "bg-green-100 text-green-800",
   inProgress: "bg-purple-100 text-purple-800",
+  resolved: "bg-blue-100 text-blue-800",
   closed: "bg-gray-100 text-gray-800",
 };
 
@@ -60,6 +63,8 @@ export default function TicketsPage() {
       if (response.ok) {
         const data = await response.json();
         setTickets(data);
+      } else {
+        toast.error("Failed to load tickets");
       }
     } catch (error) {
       toast.error("Failed to load tickets");

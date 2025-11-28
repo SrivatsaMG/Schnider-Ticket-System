@@ -4,32 +4,33 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
-interface AdminUser {
+interface User {
   id: string;
   username: string;
   email: string;
-  isAdmin: boolean;
+  role: string;
+  department?: string;
   createdAt: string;
 }
 
 export default function AdminDashboardPage() {
   const [, setLocation] = useLocation();
-  const [user, setUser] = useState<AdminUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
-    const userType = localStorage.getItem("userType");
 
-    if (storedUser && userType === "admin") {
+    if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
-      if (parsedUser.isAdmin) {
+      if (parsedUser.role === "admin") {
         setUser(parsedUser);
       } else {
-        setLocation("/login");
+        toast.error("Admin access required");
+        setLocation("/dashboard");
       }
     } else {
-      setLocation("/admin-login");
+      setLocation("/login");
     }
     setIsLoading(false);
   }, [setLocation]);
@@ -119,12 +120,11 @@ export default function AdminDashboardPage() {
                   </ul>
                 </div>
                 <Button
-                  data-testid="button-back-to-login"
-                  onClick={() => setLocation("/login")}
-                  variant="outline"
-                  className="w-full border-purple-200"
+                  data-testid="button-view-tickets"
+                  onClick={() => setLocation("/tickets")}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
                 >
-                  Go to User Login
+                  View All Tickets
                 </Button>
               </div>
             </CardContent>
@@ -152,8 +152,8 @@ export default function AdminDashboardPage() {
                 <p className="font-semibold text-green-600 mt-1">Active</p>
               </div>
               <div>
-                <p className="text-sm text-gray-600">Last Login</p>
-                <p className="font-semibold mt-1">Just now</p>
+                <p className="text-sm text-gray-600">Department</p>
+                <p className="font-semibold mt-1">{user.department || "Management"}</p>
               </div>
             </div>
           </CardContent>
