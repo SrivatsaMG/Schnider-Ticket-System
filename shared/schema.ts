@@ -24,12 +24,14 @@ export const users = pgTable("users", {
 
 export const tickets = pgTable("tickets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  ticketNumber: varchar("ticket_number").notNull().unique(),
   title: text("title").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull().default("General"),
   status: text("status").notNull().default("open"),
   priority: text("priority").notNull().default("medium"),
   plant: text("plant"),
+  imageUrl: text("image_url"),
   createdById: varchar("created_by_id").notNull(),
   assignedToId: varchar("assigned_to_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),

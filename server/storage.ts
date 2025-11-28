@@ -19,7 +19,8 @@ export interface IStorage {
   createUser(user: InsertUser, role?: string, plant?: string): Promise<User>;
   updateUser(id: string, updates: { role?: string; plant?: string; department?: string }): Promise<User>;
   seedAdminUser(): Promise<void>;
-  createTicket(ticket: CreateTicketInput, userId: string): Promise<Ticket>;
+  createTicket(ticket: CreateTicketInput, userId: string, imageUrl?: string): Promise<Ticket>;
+  getNextTicketNumber(): Promise<string>;
   getTickets(userId: string, role: string, userPlant?: string): Promise<Ticket[]>;
   getTicket(id: string): Promise<Ticket | undefined>;
   updateTicket(id: string, updates: UpdateTicketInput): Promise<Ticket>;
@@ -35,6 +36,7 @@ const inMemoryUsers: Map<string, User> = new Map();
 const inMemoryTickets: Map<string, Ticket> = new Map();
 const inMemoryReplies: Map<string, TicketReply[]> = new Map();
 const inMemoryPlants: Map<string, any> = new Map();
+let ticketCounter = 0;
 
 function initDemoData() {
   const adminHashedPassword = bcrypt.hashSync("admin123", 10);
@@ -243,18 +245,41 @@ export class SupabaseStorage implements IStorage {
     }
   }
 
-  async createTicket(ticket: CreateTicketInput, userId: string): Promise<Ticket> {
+  async getNextTicketNumber(): Promise<string> {
+    if (this.useInMemory) {
+      ticketCounter++;
+      return `TKT-${String(ticketCounter).padStart(4, '0')}`;
+    }
+
+    // For Supabase, get the count of existing tickets
+    const { count, error } = await supabase
+      .from("tickets")
+      .select("*", { count: "exact", head: true });
+
+    if (error) {
+      ticketCounter++;
+      return `TKT-${String(ticketCounter).padStart(4, '0')}`;
+    }
+
+    const nextNumber = (count || 0) + 1;
+    return `TKT-${String(nextNumber).padStart(4, '0')}`;
+  }
+
+  async createTicket(ticket: CreateTicketInput, userId: string, imageUrl?: string): Promise<Ticket> {
     const id = `ticket-${Date.now()}`;
     const now = new Date().toISOString();
+    const ticketNumber = await this.getNextTicketNumber();
 
     const newTicket: Ticket = {
       id,
+      ticketNumber,
       title: ticket.title,
       description: ticket.description,
       category: ticket.category || "General",
       status: "open",
       priority: ticket.priority,
       plant: (ticket as any).plant,
+      imageUrl: imageUrl || null,
       createdById: userId,
       assignedToId: null,
       createdAt: now,
@@ -269,11 +294,13 @@ export class SupabaseStorage implements IStorage {
     const { data, error } = await supabase
       .from("tickets")
       .insert({
+        ticket_number: ticketNumber,
         title: ticket.title,
         description: ticket.description,
         category: ticket.category || "General",
         plant: (ticket as any).plant,
         priority: ticket.priority,
+        image_url: imageUrl || null,
         created_by_id: userId,
         status: "open",
       })
