@@ -16,6 +16,7 @@ import ManagerCreateEmployeePage from "@/pages/manager-create-employee";
 import TicketsPage from "@/pages/tickets";
 import CreateTicketPage from "@/pages/create-ticket";
 import TicketDetailPage from "@/pages/ticket-detail";
+import AdminManagePlantPage from "@/pages/admin-manage-plant";
 
 function Router() {
   return (
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/admin-dashboard" component={AdminDashboardPage} />
       <Route path="/admin-users" component={AdminUsersPage} />
       <Route path="/admin-plants" component={AdminPlantsPage} />
+      <Route path="/admin-manage-plant/:id" component={AdminManagePlantPage} />
       <Route path="/admin-create-user" component={AdminCreateUserPage} />
       <Route path="/manager-create-employee" component={ManagerCreateEmployeePage} />
       <Route path="/tickets" component={TicketsPage} />

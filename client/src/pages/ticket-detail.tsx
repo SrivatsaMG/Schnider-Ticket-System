@@ -115,12 +115,12 @@ export default function TicketDetailPage() {
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/tickets/${ticket.id}/replies`, {
+      const userStr = encodeURIComponent(JSON.stringify(user));
+      const response = await fetch(`/api/tickets/${ticket.id}/replies?user=${userStr}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: replyMessage,
-          userId: user.id,
         }),
       });
 
@@ -129,8 +129,10 @@ export default function TicketDetailPage() {
         setReplies([...replies, result.reply]);
         setReplyMessage("");
         toast.success("Reply added successfully");
+        await fetchReplies(ticket.id);
       } else {
-        toast.error("Failed to add reply");
+        const error = await response.json();
+        toast.error(error.message || "Failed to add reply");
       }
     } catch (error) {
       toast.error("Failed to add reply");
