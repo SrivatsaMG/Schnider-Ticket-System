@@ -126,10 +126,17 @@ export default function TicketDetailPage() {
 
       if (response.ok) {
         const result = await response.json();
-        setReplies([...replies, result.reply]);
+        const newReply = {
+          id: result.reply.id,
+          ticketId: result.reply.ticket_id || ticket.id,
+          userId: result.reply.user_id || user.id,
+          message: result.reply.message,
+          createdAt: result.reply.created_at,
+          userName: result.reply.userName || user.username,
+        };
+        setReplies([...replies, newReply]);
         setReplyMessage("");
         toast.success("Reply added successfully");
-        await fetchReplies(ticket.id);
       } else {
         const error = await response.json();
         toast.error(error.message || "Failed to add reply");

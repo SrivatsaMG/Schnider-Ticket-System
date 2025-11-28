@@ -17,6 +17,7 @@ import TicketsPage from "@/pages/tickets";
 import CreateTicketPage from "@/pages/create-ticket";
 import TicketDetailPage from "@/pages/ticket-detail";
 import AdminManagePlantPage from "@/pages/admin-manage-plant";
+import NotificationsPage from "@/pages/notifications";
 
 function Router() {
   return (
@@ -35,6 +36,7 @@ function Router() {
       <Route path="/tickets" component={TicketsPage} />
       <Route path="/create-ticket" component={CreateTicketPage} />
       <Route path="/ticket/:id" component={TicketDetailPage} />
+      <Route path="/notifications" component={NotificationsPage} />
       <Route component={NotFound} />
     </Switch>
   );
