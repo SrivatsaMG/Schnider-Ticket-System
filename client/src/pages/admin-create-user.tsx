@@ -30,9 +30,15 @@ interface User {
   role: string;
 }
 
+interface Plant {
+  id: string;
+  name: string;
+}
+
 export default function AdminCreateUserPage() {
   const [, setLocation] = useLocation();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [plants, setPlants] = useState<Plant[]>([]);
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CreateUserFormData>({
     defaultValues: {
       role: "employee",
@@ -40,6 +46,7 @@ export default function AdminCreateUserPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const role = watch("role");
+  const plant = watch("plant");
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -47,6 +54,7 @@ export default function AdminCreateUserPage() {
       const parsedUser = JSON.parse(storedUser);
       if (parsedUser.role === "admin") {
         setCurrentUser(parsedUser);
+        fetchPlants();
       } else {
         toast.error("Admin access required");
         setLocation("/admin-dashboard");
@@ -56,7 +64,25 @@ export default function AdminCreateUserPage() {
     }
   }, [setLocation]);
 
+  const fetchPlants = async () => {
+    try {
+      const response = await fetch("/api/plants");
+      if (response.ok) {
+        const data = await response.json();
+        setPlants(data);
+      }
+    } catch (error) {
+      console.error("Failed to load plants");
+    }
+  };
+
   const onSubmit = async (data: CreateUserFormData) => {
+    // Validate that managers have a plant assigned
+    if (data.role === "manager" && !data.plant) {
+      toast.error("Please select a plant for this manager");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch("/api/auth/admin-create-user", {
@@ -175,15 +201,37 @@ export default function AdminCreateUserPage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="plant">Plant (for Managers)</Label>
-                <Input
-                  id="plant"
-                  data-testid="input-plant"
-                  placeholder="Plant A"
-                  {...register("plant")}
-                />
-              </div>
+              {role === "manager" && (
+                <div className="space-y-2">
+                  <Label htmlFor="plant">Plant <span className="text-red-500">*</span></Label>
+                  <Select value={plant || ""} onValueChange={(value) => setValue("plant", value)}>
+                    <SelectTrigger 
+                      data-testid="select-plant"
+                      className="h-10 text-base border-2 border-gray-300 rounded-lg hover:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white"
+                    >
+                      <SelectValue placeholder="Select a plant" />
+                    </SelectTrigger>
+                    <SelectContent className="z-50 border-2 border-gray-300 rounded-lg shadow-xl bg-white/95 backdrop-blur-sm">
+                      {plants.length === 0 ? (
+                        <div className="p-4 text-gray-500 text-center">No plants available</div>
+                      ) : (
+                        plants.map((p) => (
+                          <SelectItem 
+                            key={p.id} 
+                            value={p.name}
+                            className="py-3 px-4 cursor-pointer hover:bg-blue-100 focus:bg-blue-200 transition-all duration-150"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                              <span className="font-medium">{p.name}</span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="department">Department</Label>
