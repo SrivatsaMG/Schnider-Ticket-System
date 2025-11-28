@@ -3,6 +3,14 @@ import { pgTable, text, varchar, timestamp, boolean } from "drizzle-orm/pg-core"
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const plants = pgTable("plants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  location: text("location"),
+  managerId: varchar("manager_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+});
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
@@ -36,12 +44,26 @@ export const ticketReplies = pgTable("ticket_replies", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
+export const createPlantSchema = z.object({
+  name: z.string().min(3, "Plant name must be at least 3 characters"),
+  location: z.string().optional(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   email: true,
   password: true,
   plant: true,
   department: true,
+});
+
+export const createUserSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  email: z.string().email("Invalid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.enum(["admin", "manager", "employee"]),
+  plant: z.string().optional(),
+  department: z.string().optional(),
 });
 
 export const insertTicketSchema = createInsertSchema(tickets).pick({
@@ -74,8 +96,11 @@ export const updateTicketSchema = z.object({
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type CreatePlantInput = z.infer<typeof createPlantSchema>;
 export type User = typeof users.$inferSelect;
 export type Ticket = typeof tickets.$inferSelect;
+export type Plant = typeof plants.$inferSelect;
 export type TicketReply = typeof ticketReplies.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
@@ -95,6 +120,7 @@ export const ROLE_PERMISSIONS = {
     deleteTickets: true,
     assignTickets: true,
     manageUsers: true,
+    managePlants: true,
     viewReports: true,
     replyToTickets: true,
     closeTickets: true,
@@ -105,7 +131,8 @@ export const ROLE_PERMISSIONS = {
     editAllTickets: true,
     deleteTickets: false,
     assignTickets: true,
-    manageUsers: false,
+    manageUsers: true,
+    managePlants: false,
     viewReports: true,
     replyToTickets: true,
     closeTickets: true,
@@ -117,6 +144,7 @@ export const ROLE_PERMISSIONS = {
     deleteTickets: false,
     assignTickets: false,
     manageUsers: false,
+    managePlants: false,
     viewReports: false,
     replyToTickets: true,
     closeTickets: false,

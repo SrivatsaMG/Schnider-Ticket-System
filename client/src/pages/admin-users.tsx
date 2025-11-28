@@ -76,13 +76,22 @@ export default function AdminUsersPage() {
             <h1 className="text-4xl font-bold text-purple-900">User Management</h1>
             <p className="text-purple-600 mt-1">Manage all system users and plant managers</p>
           </div>
-          <Button
-            data-testid="button-back"
-            onClick={() => setLocation("/admin-dashboard")}
-            variant="outline"
-          >
-            ← Back to Dashboard
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              data-testid="button-add-user"
+              onClick={() => setLocation("/admin-create-user")}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              + Add User
+            </Button>
+            <Button
+              data-testid="button-back"
+              onClick={() => setLocation("/admin-dashboard")}
+              variant="outline"
+            >
+              ← Back to Dashboard
+            </Button>
+          </div>
         </div>
 
         {users.length === 0 ? (

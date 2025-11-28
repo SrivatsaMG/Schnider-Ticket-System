@@ -110,10 +110,19 @@ export default function DashboardPage() {
               <Button
                 data-testid="button-tickets"
                 onClick={() => setLocation("/tickets")}
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full bg-blue-600 hover:bg-blue-700 mb-2"
               >
                 Go to Tickets
               </Button>
+              {user && user.role === "manager" && (
+                <Button
+                  data-testid="button-create-employee"
+                  onClick={() => setLocation("/manager-create-employee")}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                >
+                  Create Employee
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>

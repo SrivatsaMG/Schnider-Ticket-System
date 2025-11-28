@@ -1,9 +1,18 @@
--- PRODUCTION TICKET MANAGEMENT SYSTEM - COMPLETE SETUP
--- Run this SQL file once in Supabase SQL Editor
+-- PRODUCTION TICKET MANAGEMENT SYSTEM - COMPLETE SETUP WITH PLANTS
 
 DROP TABLE IF EXISTS public.ticket_replies CASCADE;
 DROP TABLE IF EXISTS public.tickets CASCADE;
 DROP TABLE IF EXISTS public.users CASCADE;
+DROP TABLE IF EXISTS public.plants CASCADE;
+
+-- Plants table
+CREATE TABLE public.plants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name TEXT NOT NULL UNIQUE,
+  location TEXT,
+  manager_id UUID,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
 -- Users table with plant support
 CREATE TABLE public.users (
@@ -42,6 +51,8 @@ CREATE TABLE public.ticket_replies (
 );
 
 -- Performance indexes
+CREATE INDEX idx_plants_name ON public.plants(name);
+CREATE INDEX idx_plants_manager ON public.plants(manager_id);
 CREATE INDEX idx_users_email ON public.users(email);
 CREATE INDEX idx_users_role ON public.users(role);
 CREATE INDEX idx_users_plant ON public.users(plant);
@@ -49,6 +60,7 @@ CREATE INDEX idx_tickets_created_by ON public.tickets(created_by_id);
 CREATE INDEX idx_tickets_assigned_to ON public.tickets(assigned_to_id);
 CREATE INDEX idx_tickets_status ON public.tickets(status);
 CREATE INDEX idx_tickets_plant ON public.tickets(plant);
+CREATE INDEX idx_tickets_category ON public.tickets(category);
 CREATE INDEX idx_replies_ticket ON public.ticket_replies(ticket_id);
 
 -- Demo users
@@ -56,3 +68,8 @@ INSERT INTO public.users (username, email, password, role, plant, department) VA
 ('admin', 'admin@example.com', '$2b$10$etuccpBpRbbdx6IsKk3TTuy4uUEOzcVpCdrU1lg1BWXYXa4OzkKnG', 'admin', NULL, 'Management'),
 ('manager', 'manager@example.com', '$2b$10$TuguM11YOFL24lTpg7PmfeYwzJlgtTLXuXocYVKfuUbEM.bUOSyNq', 'manager', 'Plant A', 'Operations')
 ON CONFLICT (email) DO NOTHING;
+
+-- Demo plant
+INSERT INTO public.plants (name, location) VALUES
+('Plant A', 'Location A')
+ON CONFLICT (name) DO NOTHING;

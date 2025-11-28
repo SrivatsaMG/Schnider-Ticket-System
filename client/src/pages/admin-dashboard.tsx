@@ -128,11 +128,18 @@ export default function AdminDashboardPage() {
                     View All Tickets
                   </Button>
                   <Button
+                    data-testid="button-manage-plants"
+                    onClick={() => setLocation("/admin-plants")}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
+                    Manage Plants
+                  </Button>
+                  <Button
                     data-testid="button-manage-users"
                     onClick={() => setLocation("/admin-users")}
                     className="w-full bg-blue-600 hover:bg-blue-700"
                   >
-                    Manage Users & Plant Managers
+                    Manage Users
                   </Button>
                   <Button
                     data-testid="button-profile"
