@@ -53,11 +53,13 @@ CREATE INDEX IF NOT EXISTS idx_tickets_created_at ON public.tickets(created_at D
 -- ============================================================
 -- STEP 5: INSERT ADMIN USER
 -- ============================================================
+-- Email: admin@example.com
+-- Password: admin123
 INSERT INTO public.users (username, email, password, role, department)
 VALUES (
   'admin',
   'admin@example.com',
-  '$2a$10$YIjlrVyFvj5GdTCKg.bkL.eH0bWUYqF4wfOH2hXrOppYvfI5E5tVe',
+  '$2b$10$etuccpBpRbbdx6IsKk3TTuy4uUEOzcVpCdrU1lg1BWXYXa4OzkKnG',
   'admin',
   'Management'
 )
@@ -66,11 +68,13 @@ ON CONFLICT (email) DO NOTHING;
 -- ============================================================
 -- STEP 6: INSERT MANAGER USER
 -- ============================================================
+-- Email: manager@example.com
+-- Password: manager123
 INSERT INTO public.users (username, email, password, role, department)
 VALUES (
   'manager',
   'manager@example.com',
-  '$2a$10$nOaYLl0lQMAyaSKj.SLmV.YG7klvBZmKS6UdK3YnNBqPrVVd5WtSi',
+  '$2b$10$TuguM11YOFL24lTpg7PmfeYwzJlgtTLXuXocYVKfuUbEM.bUOSyNq',
   'manager',
   'Operations'
 )
