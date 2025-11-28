@@ -16,10 +16,11 @@ export interface IStorage {
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByPlant(plant: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
-  createUser(user: InsertUser, role?: string): Promise<User>;
+  createUser(user: InsertUser, role?: string, plant?: string): Promise<User>;
+  updateUser(id: string, updates: { role?: string; plant?: string; department?: string }): Promise<User>;
   seedAdminUser(): Promise<void>;
   createTicket(ticket: CreateTicketInput, userId: string): Promise<Ticket>;
-  getTickets(userId: string, role: string): Promise<Ticket[]>;
+  getTickets(userId: string, role: string, userPlant?: string): Promise<Ticket[]>;
   getTicket(id: string): Promise<Ticket | undefined>;
   updateTicket(id: string, updates: UpdateTicketInput): Promise<Ticket>;
   deleteTicket(id: string): Promise<boolean>;
@@ -144,7 +145,7 @@ export class SupabaseStorage implements IStorage {
     return ((data as unknown as User[]) || []);
   }
 
-  async createUser(insertUser: InsertUser, role = ROLES.EMPLOYEE): Promise<User> {
+  async createUser(insertUser: InsertUser, role = ROLES.EMPLOYEE, plant?: string): Promise<User> {
     const hashedPassword = await bcrypt.hash(insertUser.password, 10);
     const id = `user-${Date.now()}`;
     const createdAt = new Date().toISOString();
@@ -155,6 +156,7 @@ export class SupabaseStorage implements IStorage {
       email: insertUser.email,
       password: hashedPassword,
       role,
+      plant: plant || undefined,
       department: insertUser.department || "General",
       createdAt,
     };
@@ -171,6 +173,7 @@ export class SupabaseStorage implements IStorage {
         email: insertUser.email,
         password: hashedPassword,
         role,
+        plant: plant || null,
         department: insertUser.department || "General",
       })
       .select()
@@ -180,6 +183,31 @@ export class SupabaseStorage implements IStorage {
       this.useInMemory = true;
       inMemoryUsers.set(id, user);
       return user;
+    }
+
+    return (data as unknown as User);
+  }
+
+  async updateUser(id: string, updates: { role?: string; plant?: string; department?: string }): Promise<User> {
+    const now = new Date().toISOString();
+
+    if (this.useInMemory) {
+      const user = inMemoryUsers.get(id);
+      if (!user) throw new Error("User not found");
+      const updated = { ...user, ...updates, updatedAt: now };
+      inMemoryUsers.set(id, updated);
+      return updated;
+    }
+
+    const { data, error } = await supabase
+      .from("users")
+      .update({ ...updates, updated_at: now })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Failed to update user: ${error.message}`);
     }
 
     return (data as unknown as User);

@@ -106,6 +106,59 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/auth/admin-create-user", async (req, res) => {
+    try {
+      const { username, email, password, role, plant, department } = req.body;
+
+      if (!username || !email || !password || !role) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: "Email already exists" });
+      }
+
+      const user = await storage.createUser(
+        { username, email, password, department },
+        role,
+        plant
+      );
+
+      const { password: _, ...userWithoutPassword } = user;
+      res.status(201).json({ message: "User created successfully", user: userWithoutPassword });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to create user" });
+    }
+  });
+
+  app.patch("/api/users/:id", async (req, res) => {
+    try {
+      const userStr = req.query.user as string;
+      if (!userStr) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = JSON.parse(userStr);
+      if (user.role !== ROLES.ADMIN) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
+      const { role, plant, department } = req.body;
+      const updates: any = {};
+
+      if (role) updates.role = role;
+      if (plant) updates.plant = plant;
+      if (department) updates.department = department;
+
+      const updatedUser = await storage.updateUser(req.params.id, updates);
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json({ message: "User updated successfully", user: userWithoutPassword });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to update user" });
+    }
+  });
+
   app.post("/api/tickets", async (req, res) => {
     try {
       const userStr = req.query.user as string;

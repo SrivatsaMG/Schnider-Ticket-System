@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Edit } from "lucide-react";
 import { toast } from "sonner";
 
 interface User {
@@ -125,14 +125,24 @@ export default function AdminUsersPage() {
                         </p>
                       )}
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex flex-col items-end gap-2">
                       <Badge
                         data-testid={`badge-role-${user.id}`}
                         className={roleColors[user.role as keyof typeof roleColors] || "bg-gray-100 text-gray-800"}
                       >
                         {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
                       </Badge>
-                      <p data-testid={`text-created-${user.id}`} className="text-xs text-gray-500 mt-2">
+                      <Button
+                        data-testid={`button-edit-${user.id}`}
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setLocation(`/admin-edit-user/${user.id}`)}
+                        className="gap-1"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit
+                      </Button>
+                      <p data-testid={`text-created-${user.id}`} className="text-xs text-gray-500">
                         {new Date(user.createdAt).toLocaleDateString()}
                       </p>
                     </div>
