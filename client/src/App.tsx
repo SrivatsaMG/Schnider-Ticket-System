@@ -1,57 +1,46 @@
--- Production Ticket Management System - Complete Setup
+import { Switch, Route } from "wouter";
+import { queryClient } from "./lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { Toaster } from "@/components/ui/toaster";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import NotFound from "@/pages/not-found";
+import LoginPage from "@/pages/login";
+import RegisterPage from "@/pages/register";
+import DashboardPage from "@/pages/dashboard";
+import ProfilePage from "@/pages/profile";
+import AdminDashboardPage from "@/pages/admin-dashboard";
+import AdminUsersPage from "@/pages/admin-users";
+import TicketsPage from "@/pages/tickets";
+import CreateTicketPage from "@/pages/create-ticket";
+import TicketDetailPage from "@/pages/ticket-detail";
 
-DROP TABLE IF EXISTS public.ticket_replies CASCADE;
-DROP TABLE IF EXISTS public.tickets CASCADE;
-DROP TABLE IF EXISTS public.users CASCADE;
+function Router() {
+  return (
+    <Switch>
+      <Route path="/" component={LoginPage} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
+      <Route path="/dashboard" component={DashboardPage} />
+      <Route path="/profile" component={ProfilePage} />
+      <Route path="/admin-dashboard" component={AdminDashboardPage} />
+      <Route path="/admin-users" component={AdminUsersPage} />
+      <Route path="/tickets" component={TicketsPage} />
+      <Route path="/create-ticket" component={CreateTicketPage} />
+      <Route path="/ticket/:id" component={TicketDetailPage} />
+      <Route component={NotFound} />
+    </Switch>
+  );
+}
 
--- Users table
-CREATE TABLE public.users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  username TEXT NOT NULL UNIQUE,
-  email TEXT NOT NULL UNIQUE,
-  password TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'employee',
-  plant TEXT,
-  department TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Router />
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+}
 
--- Tickets table
-CREATE TABLE public.tickets (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  description TEXT NOT NULL,
-  category TEXT NOT NULL DEFAULT 'General',
-  status TEXT DEFAULT 'open',
-  priority TEXT DEFAULT 'medium',
-  plant TEXT,
-  created_by_id UUID NOT NULL,
-  assigned_to_id UUID,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Ticket replies table
-CREATE TABLE public.ticket_replies (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  ticket_id UUID NOT NULL,
-  user_id UUID NOT NULL,
-  message TEXT NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Indexes
-CREATE INDEX idx_users_email ON public.users(email);
-CREATE INDEX idx_users_role ON public.users(role);
-CREATE INDEX idx_users_plant ON public.users(plant);
-CREATE INDEX idx_tickets_created_by ON public.tickets(created_by_id);
-CREATE INDEX idx_tickets_assigned_to ON public.tickets(assigned_to_id);
-CREATE INDEX idx_tickets_status ON public.tickets(status);
-CREATE INDEX idx_tickets_plant ON public.tickets(plant);
-CREATE INDEX idx_replies_ticket ON public.ticket_replies(ticket_id);
-
--- Insert demo users
-INSERT INTO public.users (username, email, password, role, plant, department) VALUES
-('admin', 'admin@example.com', '$2b$10$etuccpBpRbbdx6IsKk3TTuy4uUEOzcVpCdrU1lg1BWXYXa4OzkKnG', 'admin', NULL, 'Management'),
-('manager', 'manager@example.com', '$2b$10$TuguM11YOFL24lTpg7PmfeYwzJlgtTLXuXocYVKfuUbEM.bUOSyNq', 'manager', 'Plant A', 'Operations')
-ON CONFLICT (email) DO NOTHING;
+export default App;
