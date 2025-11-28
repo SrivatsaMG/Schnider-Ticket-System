@@ -180,22 +180,16 @@ export default function CreateTicketPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="plant">Plant</Label>
-                <Select value={plant} onValueChange={(value) => setValue("plant", value)}>
+                <Select value={plant || ""} onValueChange={(value) => setValue("plant", value)}>
                   <SelectTrigger data-testid="select-plant">
-                    <SelectValue />
+                    <SelectValue placeholder="Select a plant" />
                   </SelectTrigger>
                   <SelectContent>
-                    {plants.length === 0 ? (
-                      <SelectItem value="" disabled>
-                        No plants available
+                    {plants.map((p) => (
+                      <SelectItem key={p.id} value={p.name}>
+                        {p.name}
                       </SelectItem>
-                    ) : (
-                      plants.map((p) => (
-                        <SelectItem key={p.id} value={p.name}>
-                          {p.name}
-                        </SelectItem>
-                      ))
-                    )}
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
