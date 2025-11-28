@@ -417,7 +417,15 @@ export class SupabaseStorage implements IStorage {
   async getTicketReplies(ticketId: string): Promise<TicketReply[]> {
     if (this.useInMemory) {
       const replies = inMemoryReplies.get(ticketId) || [];
-      return Promise.resolve(replies);
+      // Enrich replies with usernames for in-memory mode
+      const enrichedReplies = replies.map((reply: any) => {
+        const user = inMemoryUsers.get(reply.userId);
+        return {
+          ...reply,
+          userName: user?.username || "Unknown User",
+        };
+      });
+      return Promise.resolve(enrichedReplies);
     }
 
     const { data, error } = await supabase
@@ -427,10 +435,24 @@ export class SupabaseStorage implements IStorage {
       .order("created_at", { ascending: true });
 
     if (error) {
-      return inMemoryReplies.get(ticketId) || [];
+      const replies = inMemoryReplies.get(ticketId) || [];
+      const enrichedReplies = replies.map((reply: any) => {
+        const user = inMemoryUsers.get(reply.userId);
+        return {
+          ...reply,
+          userName: user?.username || "Unknown User",
+        };
+      });
+      return enrichedReplies;
     }
 
-    return ((data as unknown as TicketReply[]) || []);
+    // Enrich Supabase replies with username from joined data
+    const enrichedData = (data || []).map((reply: any) => ({
+      ...reply,
+      userName: reply.users?.username || "Unknown User",
+    }));
+
+    return (enrichedData as unknown as TicketReply[]);
   }
 
   async createReply(ticketId: string, userId: string, message: string): Promise<TicketReply> {
