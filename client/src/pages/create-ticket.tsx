@@ -210,7 +210,7 @@ export default function CreateTicketPage() {
                   >
                     <SelectValue placeholder="Select a plant" />
                   </SelectTrigger>
-                  <SelectContent className="z-50 border-2 border-gray-300 rounded-lg shadow-xl">
+                  <SelectContent className="z-50 border-2 border-gray-300 rounded-lg shadow-xl bg-white/95 backdrop-blur-sm">
                     {plants.length === 0 ? (
                       <div className="p-4 text-gray-500 text-center">No plants available</div>
                     ) : (
@@ -248,7 +248,7 @@ export default function CreateTicketPage() {
                   >
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="z-50 border-2 border-gray-300 rounded-lg shadow-xl">
+                  <SelectContent className="z-50 border-2 border-gray-300 rounded-lg shadow-xl bg-white/95 backdrop-blur-sm">
                     {CATEGORIES.map((cat) => (
                       <SelectItem 
                         key={cat} 
@@ -282,7 +282,7 @@ export default function CreateTicketPage() {
                   >
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="z-50 border-2 border-gray-300 rounded-lg shadow-xl">
+                  <SelectContent className="z-50 border-2 border-gray-300 rounded-lg shadow-xl bg-white/95 backdrop-blur-sm">
                     <SelectItem 
                       value="low"
                       className="py-3 px-4 cursor-pointer hover:bg-blue-100 focus:bg-blue-200 transition-all duration-150"
