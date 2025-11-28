@@ -14,6 +14,7 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByPlant(plant: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser, role?: string): Promise<User>;
   seedAdminUser(): Promise<void>;
@@ -37,6 +38,7 @@ const inMemoryPlants: Map<string, any> = new Map();
 function initDemoData() {
   const adminHashedPassword = bcrypt.hashSync("admin123", 10);
   const managerHashedPassword = bcrypt.hashSync("manager123", 10);
+  const now = new Date().toISOString();
 
   const demoAdmin: User = {
     id: "admin-001",
@@ -45,7 +47,7 @@ function initDemoData() {
     password: adminHashedPassword,
     role: ROLES.ADMIN,
     department: "Management",
-    createdAt: new Date().toISOString(),
+    createdAt: now,
   };
 
   const demoManager: User = {
@@ -55,7 +57,7 @@ function initDemoData() {
     password: managerHashedPassword,
     role: ROLES.MANAGER,
     department: "Operations",
-    createdAt: new Date().toISOString(),
+    createdAt: now,
   };
 
   inMemoryUsers.set(demoAdmin.id, demoAdmin);
@@ -101,6 +103,27 @@ export class SupabaseStorage implements IStorage {
     if (error) {
       this.useInMemory = true;
       const user = Array.from(inMemoryUsers.values()).find((u) => u.email === email);
+      return user;
+    }
+    return (data as unknown as User) || undefined;
+  }
+
+  async getUserByPlant(plant: string): Promise<User | undefined> {
+    if (this.useInMemory) {
+      const user = Array.from(inMemoryUsers.values()).find((u) => u.plant === plant && u.role === ROLES.MANAGER);
+      return user;
+    }
+
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("plant", plant)
+      .eq("role", ROLES.MANAGER)
+      .single();
+
+    if (error) {
+      this.useInMemory = true;
+      const user = Array.from(inMemoryUsers.values()).find((u) => u.plant === plant && u.role === ROLES.MANAGER);
       return user;
     }
     return (data as unknown as User) || undefined;
@@ -232,12 +255,20 @@ export class SupabaseStorage implements IStorage {
     if (this.useInMemory) {
       if (role === ROLES.ADMIN || role === ROLES.MANAGER) {
         return Array.from(inMemoryTickets.values()).sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          (a, b) => {
+            const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt;
+            const dateB = typeof b.createdAt === 'string' ? new Date(b.createdAt) : b.createdAt;
+            return dateB.getTime() - dateA.getTime();
+          }
         );
       }
       return Array.from(inMemoryTickets.values())
         .filter((t) => t.createdById === userId || t.assignedToId === userId)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        .sort((a, b) => {
+          const dateA = typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt;
+          const dateB = typeof b.createdAt === 'string' ? new Date(b.createdAt) : b.createdAt;
+          return dateB.getTime() - dateA.getTime();
+        });
     }
 
     let query = supabase.from("tickets").select("*");
@@ -289,7 +320,7 @@ export class SupabaseStorage implements IStorage {
       const updated: Ticket = {
         ...ticket,
         ...updates,
-        updatedAt: now,
+        updatedAt: now as any,
       };
       inMemoryTickets.set(id, updated);
       return updated;
@@ -354,7 +385,7 @@ export class SupabaseStorage implements IStorage {
       ticketId,
       userId,
       message,
-      createdAt: now,
+      createdAt: now as any,
     };
 
     if (this.useInMemory) {

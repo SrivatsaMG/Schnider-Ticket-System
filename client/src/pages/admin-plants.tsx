@@ -38,6 +38,7 @@ export default function AdminPlantsPage() {
       const parsedUser = JSON.parse(storedUser);
       if (parsedUser.role === "admin") {
         setCurrentUser(parsedUser);
+        fetchPlants();
       } else {
         toast.error("Admin access required");
         setLocation("/dashboard");
@@ -46,6 +47,18 @@ export default function AdminPlantsPage() {
       setLocation("/login");
     }
   }, [setLocation]);
+
+  const fetchPlants = async () => {
+    try {
+      const response = await fetch("/api/plants");
+      if (response.ok) {
+        const data = await response.json();
+        setPlants(data);
+      }
+    } catch (error) {
+      console.error("Failed to load plants");
+    }
+  };
 
   const handleCreatePlant = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +69,8 @@ export default function AdminPlantsPage() {
 
     setIsLoading(true);
     try {
-      const response = await fetch("/api/plants", {
+      const userStr = encodeURIComponent(JSON.stringify(currentUser));
+      const response = await fetch(`/api/plants?user=${userStr}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -74,6 +88,7 @@ export default function AdminPlantsPage() {
       setPlantName("");
       setPlantLocation("");
       setShowForm(false);
+      await fetchPlants();
     } catch (error: any) {
       toast.error(error.message || "Failed to create plant");
     } finally {

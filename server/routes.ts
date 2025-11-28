@@ -312,7 +312,36 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Message cannot be empty" });
       }
 
+      // Get ticket to notify relevant users
+      const ticket = await storage.getTicket(req.params.id);
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      // Create the reply
       const reply = await storage.createReply(req.params.id, user.id, message);
+
+      // Get all users who should be notified
+      const notifyUserIds = new Set<string>();
+      
+      // Notify ticket creator
+      if (ticket.createdById && ticket.createdById !== user.id) {
+        notifyUserIds.add(ticket.createdById);
+      }
+
+      // Notify assigned user
+      if (ticket.assignedToId && ticket.assignedToId !== user.id) {
+        notifyUserIds.add(ticket.assignedToId);
+      }
+
+      // Notify plant manager (if plant is assigned)
+      if (ticket.plant) {
+        const manager = await storage.getUserByPlant(ticket.plant);
+        if (manager && manager.id !== user.id) {
+          notifyUserIds.add(manager.id);
+        }
+      }
+
       res.status(201).json({ message: "Reply created", reply: { ...reply, userName: user.username } });
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to create reply" });
