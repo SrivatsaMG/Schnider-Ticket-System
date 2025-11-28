@@ -8,7 +8,8 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  isAdmin: boolean("is_admin").default(false),
+  role: text("role").notNull().default("employee"),
+  department: text("department"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
 });
 
@@ -28,6 +29,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   email: true,
   password: true,
+  department: true,
 });
 
 export const insertTicketSchema = createInsertSchema(tickets).pick({
@@ -62,3 +64,39 @@ export type Ticket = typeof tickets.$inferSelect;
 export type InsertTicket = z.infer<typeof insertTicketSchema>;
 export type CreateTicketInput = z.infer<typeof createTicketSchema>;
 export type UpdateTicketInput = z.infer<typeof updateTicketSchema>;
+
+export const ROLES = {
+  ADMIN: "admin",
+  MANAGER: "manager",
+  EMPLOYEE: "employee",
+} as const;
+
+export const ROLE_PERMISSIONS = {
+  admin: {
+    viewAllTickets: true,
+    createTicket: true,
+    editAllTickets: true,
+    deleteTickets: true,
+    assignTickets: true,
+    manageUsers: true,
+    viewReports: true,
+  },
+  manager: {
+    viewAllTickets: true,
+    createTicket: true,
+    editAllTickets: true,
+    deleteTickets: false,
+    assignTickets: true,
+    manageUsers: false,
+    viewReports: true,
+  },
+  employee: {
+    viewAllTickets: false,
+    createTicket: true,
+    editAllTickets: false,
+    deleteTickets: false,
+    assignTickets: false,
+    manageUsers: false,
+    viewReports: false,
+  },
+};

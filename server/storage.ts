@@ -1,4 +1,4 @@
-import { type User, type InsertUser, type Ticket, type CreateTicketInput, type UpdateTicketInput } from "@shared/schema";
+import { type User, type InsertUser, type Ticket, type CreateTicketInput, type UpdateTicketInput, ROLES } from "@shared/schema";
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 
@@ -15,10 +15,10 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
-  createUser(user: InsertUser, isAdmin?: boolean): Promise<User>;
+  createUser(user: InsertUser, role?: string): Promise<User>;
   seedAdminUser(): Promise<void>;
   createTicket(ticket: CreateTicketInput, userId: string): Promise<Ticket>;
-  getTickets(userId: string, isAdmin: boolean): Promise<Ticket[]>;
+  getTickets(userId: string, role: string): Promise<Ticket[]>;
   getTicket(id: string): Promise<Ticket | undefined>;
   updateTicket(id: string, updates: UpdateTicketInput): Promise<Ticket>;
   deleteTicket(id: string): Promise<boolean>;
@@ -28,19 +28,33 @@ export interface IStorage {
 const inMemoryUsers: Map<string, User> = new Map();
 const inMemoryTickets: Map<string, Ticket> = new Map();
 
-// Initialize with demo admin
 function initDemoData() {
   const adminHashedPassword = bcrypt.hashSync("admin123", 10);
+  const managerHashedPassword = bcrypt.hashSync("manager123", 10);
+
   const demoAdmin: User = {
     id: "admin-001",
     username: "admin",
     email: "admin@example.com",
     password: adminHashedPassword,
-    isAdmin: true,
+    role: ROLES.ADMIN,
+    department: "Management",
     createdAt: new Date().toISOString(),
   };
+
+  const demoManager: User = {
+    id: "manager-001",
+    username: "manager",
+    email: "manager@example.com",
+    password: managerHashedPassword,
+    role: ROLES.MANAGER,
+    department: "Operations",
+    createdAt: new Date().toISOString(),
+  };
+
   inMemoryUsers.set(demoAdmin.id, demoAdmin);
-  console.log("✓ Demo admin initialized: admin@example.com / admin123");
+  inMemoryUsers.set(demoManager.id, demoManager);
+  console.log("✓ Demo users initialized (Admin + Manager)");
 }
 
 initDemoData();
@@ -101,7 +115,7 @@ export class SupabaseStorage implements IStorage {
     return ((data as unknown as User[]) || []);
   }
 
-  async createUser(insertUser: InsertUser, isAdmin = false): Promise<User> {
+  async createUser(insertUser: InsertUser, role = ROLES.EMPLOYEE): Promise<User> {
     const hashedPassword = await bcrypt.hash(insertUser.password, 10);
     const id = `user-${Date.now()}`;
     const createdAt = new Date().toISOString();
@@ -111,7 +125,8 @@ export class SupabaseStorage implements IStorage {
       username: insertUser.username,
       email: insertUser.email,
       password: hashedPassword,
-      isAdmin,
+      role,
+      department: insertUser.department || "General",
       createdAt,
     };
 
@@ -126,7 +141,8 @@ export class SupabaseStorage implements IStorage {
         username: insertUser.username,
         email: insertUser.email,
         password: hashedPassword,
-        is_admin: isAdmin,
+        role,
+        department: insertUser.department || "General",
       })
       .select()
       .single();
@@ -149,13 +165,14 @@ export class SupabaseStorage implements IStorage {
             username: "admin",
             email: "admin@example.com",
             password: "admin123",
+            department: "Management",
           },
-          true
+          ROLES.ADMIN
         );
-        console.log("✓ Admin user seeded to database");
+        console.log("✓ Admin user seeded");
       }
     } catch (error: any) {
-      console.log("Note: Using in-memory admin user");
+      console.log("Using in-memory admin user");
     }
   }
 
@@ -201,9 +218,9 @@ export class SupabaseStorage implements IStorage {
     return (data as unknown as Ticket);
   }
 
-  async getTickets(userId: string, isAdmin: boolean): Promise<Ticket[]> {
+  async getTickets(userId: string, role: string): Promise<Ticket[]> {
     if (this.useInMemory) {
-      if (isAdmin) {
+      if (role === ROLES.ADMIN || role === ROLES.MANAGER) {
         return Array.from(inMemoryTickets.values()).sort(
           (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         );
@@ -215,7 +232,7 @@ export class SupabaseStorage implements IStorage {
 
     let query = supabase.from("tickets").select("*");
 
-    if (!isAdmin) {
+    if (role === ROLES.EMPLOYEE) {
       query = query.or(`created_by_id.eq.${userId},assigned_to_id.eq.${userId}`);
     }
 
@@ -223,7 +240,7 @@ export class SupabaseStorage implements IStorage {
 
     if (error) {
       this.useInMemory = true;
-      if (isAdmin) {
+      if (role === ROLES.ADMIN || role === ROLES.MANAGER) {
         return Array.from(inMemoryTickets.values());
       }
       return Array.from(inMemoryTickets.values()).filter(

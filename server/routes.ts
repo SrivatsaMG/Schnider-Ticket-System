@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, loginSchema, createTicketSchema, updateTicketSchema } from "@shared/schema";
+import { insertUserSchema, loginSchema, createTicketSchema, updateTicketSchema, ROLES, ROLE_PERMISSIONS } from "@shared/schema";
 import bcrypt from "bcryptjs";
 
 export async function registerRoutes(
@@ -10,7 +10,6 @@ export async function registerRoutes(
 ): Promise<Server> {
   await storage.seedAdminUser();
 
-  // Auth Routes
   app.post("/api/auth/register", async (req, res) => {
     try {
       const parsed = insertUserSchema.safeParse(req.body);
@@ -23,7 +22,7 @@ export async function registerRoutes(
         return res.status(409).json({ message: "Email already registered" });
       }
 
-      const user = await storage.createUser(parsed.data, false);
+      const user = await storage.createUser(parsed.data, ROLES.EMPLOYEE);
       const { password, ...userWithoutPassword } = user;
 
       res.status(201).json({
@@ -65,36 +64,6 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/auth/admin-login", async (req, res) => {
-    try {
-      const parsed = loginSchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({ message: "Invalid input" });
-      }
-
-      const user = await storage.getUserByEmail(parsed.data.email);
-      if (!user || !user.isAdmin) {
-        return res.status(401).json({ message: "Admin access denied" });
-      }
-
-      const isPasswordValid = await bcrypt.compare(
-        parsed.data.password,
-        user.password
-      );
-      if (!isPasswordValid) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-
-      const { password, ...userWithoutPassword } = user;
-      res.json({
-        message: "Admin login successful",
-        user: userWithoutPassword,
-      });
-    } catch (error: any) {
-      res.status(500).json({ message: error.message || "Admin login failed" });
-    }
-  });
-
   app.get("/api/auth/me", async (req, res) => {
     try {
       const userStr = req.query.user as string;
@@ -117,15 +86,26 @@ export async function registerRoutes(
 
   app.get("/api/users", async (req, res) => {
     try {
+      const userStr = req.query.user as string;
+      if (!userStr) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = JSON.parse(userStr);
+      const permissions = ROLE_PERMISSIONS[user.role as keyof typeof ROLE_PERMISSIONS];
+
+      if (!permissions?.manageUsers && user.role !== ROLES.ADMIN) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
       const users = await storage.getAllUsers();
-      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+      const usersWithoutPasswords = users.map(({ password, ...u }) => u);
       res.json(usersWithoutPasswords);
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to fetch users" });
     }
   });
 
-  // Ticket Routes
   app.post("/api/tickets", async (req, res) => {
     try {
       const userStr = req.query.user as string;
@@ -134,6 +114,12 @@ export async function registerRoutes(
       }
 
       const user = JSON.parse(userStr);
+      const permissions = ROLE_PERMISSIONS[user.role as keyof typeof ROLE_PERMISSIONS];
+
+      if (!permissions?.createTicket) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
       const parsed = createTicketSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid input" });
@@ -154,7 +140,7 @@ export async function registerRoutes(
       }
 
       const user = JSON.parse(userStr);
-      const tickets = await storage.getTickets(user.id, user.isAdmin);
+      const tickets = await storage.getTickets(user.id, user.role);
       res.json(tickets);
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to fetch tickets" });
@@ -175,13 +161,32 @@ export async function registerRoutes(
 
   app.patch("/api/tickets/:id", async (req, res) => {
     try {
+      const userStr = req.query.user as string;
+      if (!userStr) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = JSON.parse(userStr);
+      const ticket = await storage.getTicket(req.params.id);
+
+      if (!ticket) {
+        return res.status(404).json({ message: "Ticket not found" });
+      }
+
+      const permissions = ROLE_PERMISSIONS[user.role as keyof typeof ROLE_PERMISSIONS];
+      if (!permissions?.editAllTickets) {
+        if (ticket.createdById !== user.id) {
+          return res.status(403).json({ message: "Forbidden" });
+        }
+      }
+
       const parsed = updateTicketSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid input" });
       }
 
-      const ticket = await storage.updateTicket(req.params.id, parsed.data);
-      res.json({ message: "Ticket updated", ticket });
+      const updatedTicket = await storage.updateTicket(req.params.id, parsed.data);
+      res.json({ message: "Ticket updated", ticket: updatedTicket });
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to update ticket" });
     }
@@ -189,6 +194,18 @@ export async function registerRoutes(
 
   app.delete("/api/tickets/:id", async (req, res) => {
     try {
+      const userStr = req.query.user as string;
+      if (!userStr) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = JSON.parse(userStr);
+      const permissions = ROLE_PERMISSIONS[user.role as keyof typeof ROLE_PERMISSIONS];
+
+      if (!permissions?.deleteTickets) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
       await storage.deleteTicket(req.params.id);
       res.json({ message: "Ticket deleted" });
     } catch (error: any) {
@@ -198,6 +215,18 @@ export async function registerRoutes(
 
   app.post("/api/tickets/:id/assign", async (req, res) => {
     try {
+      const userStr = req.query.user as string;
+      if (!userStr) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = JSON.parse(userStr);
+      const permissions = ROLE_PERMISSIONS[user.role as keyof typeof ROLE_PERMISSIONS];
+
+      if (!permissions?.assignTickets) {
+        return res.status(403).json({ message: "Forbidden" });
+      }
+
       const { userId } = req.body;
       if (!userId) {
         return res.status(400).json({ message: "User ID required" });
@@ -207,6 +236,21 @@ export async function registerRoutes(
       res.json({ message: "Ticket assigned", ticket });
     } catch (error: any) {
       res.status(500).json({ message: error.message || "Failed to assign ticket" });
+    }
+  });
+
+  app.get("/api/permissions", async (req, res) => {
+    try {
+      const userStr = req.query.user as string;
+      if (!userStr) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const user = JSON.parse(userStr);
+      const permissions = ROLE_PERMISSIONS[user.role as keyof typeof ROLE_PERMISSIONS];
+      res.json(permissions);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Failed to fetch permissions" });
     }
   });
 

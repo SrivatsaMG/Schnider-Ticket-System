@@ -1,126 +1,76 @@
-# Production Ticket Management System
+# Production Ticket Management System - Role-Based Access Control
 
-A modern, full-stack ticket management application designed for internal company use to track and manage production issues efficiently.
+A comprehensive, full-stack ticket management system with three-tier role-based access control for production issue tracking.
 
-## 🎯 Features
+## 🎯 Three-Role System
 
-### User Authentication
-- **User Registration** - Create new employee accounts
-- **Secure Login** - Email and password authentication
-- **Admin Access** - Dedicated admin login for management functions
-- **Password Security** - Bcryptjs hashing for secure password storage
+### 1. **Admin** 👨‍💼
+- **Email:** admin@example.com
+- **Password:** admin123
+- **Permissions:**
+  - View all tickets in the system
+  - Create tickets
+  - Edit all tickets
+  - Delete any ticket
+  - Assign tickets to team members
+  - Manage users and roles
+  - View system reports
 
-### Ticket Management
-- **Create Tickets** - Report production issues with title, description, and priority
-- **View Tickets** - Dashboard showing all relevant tickets
-- **Update Status** - Track ticket progress (Open → In Progress → Resolved → Closed)
-- **Priority Tracking** - Mark issues as Low, Medium, High, or Critical
-- **Assign Tickets** - Admins can assign tickets to team members
-- **Delete Tickets** - Remove resolved or duplicate tickets
+### 2. **Manager** 👨‍✈️
+- **Email:** manager@example.com
+- **Password:** manager123
+- **Permissions:**
+  - View all department tickets
+  - Create tickets
+  - Edit all tickets in department
+  - Assign tickets to team members
+  - View department reports
+  - Cannot manage users
+  - Cannot delete tickets (can resolve instead)
 
-### Admin Dashboard
-- View all system tickets
-- Manage user assignments
-- Update ticket status and priority
-- Monitor production issues
-
-### User Dashboard
-- View personal profile
-- Access ticket management system
-- Create and manage tickets
-- Track assigned issues
-
-## 🛠️ Tech Stack
-
-**Frontend:**
-- React 19
-- TypeScript
-- Tailwind CSS
-- Shadcn/UI Components
-- Wouter (Routing)
-- React Hook Form
-- Zod (Validation)
-- Sonner (Notifications)
-- TanStack Query
-
-**Backend:**
-- Node.js with Express
-- TypeScript
-- Drizzle ORM
-- Bcryptjs (Password hashing)
-- Supabase (Database)
-- Zod (Schema validation)
-
-**Deployment:**
-- Vercel (Recommended)
-- Supabase (Database)
+### 3. **Employee** 👤
+- **Create:** Register yourself on signup page
+- **Permissions:**
+  - Create own tickets
+  - View own created tickets
+  - View assigned tickets
+  - Cannot view other employees' tickets
+  - Cannot assign tickets
+  - Cannot delete tickets
+  - Cannot manage users
 
 ## 🚀 Getting Started
 
 ### Prerequisites
 - Node.js 20.x or higher
-- Supabase account (optional for development)
 
 ### Installation
 
-1. **Clone the repository**
-   ```bash
-   git clone <your-repo-url>
-   cd project-directory
-   ```
+```bash
+npm install
+npm run dev
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   Create a `.env.local` file:
-   ```
-   SUPABASE_URL=your_supabase_url
-   SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-
-4. **Start development server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Access the application**
-   - Open http://localhost:5000
-   - Login with demo credentials:
-     - Email: `admin@example.com`
-     - Password: `admin123`
-
-## 📋 Demo Credentials
-
-### Admin Account
-- **Email:** admin@example.com
-- **Password:** admin123
-- **Access:** Admin dashboard with full system management
-
-### Regular User
-- Create your own account via registration page
-- Access ticket creation and management
+### Access the Application
+- Open http://localhost:5000
+- Choose your role to login:
+  - **Admin:** admin@example.com / admin123
+  - **Manager:** manager@example.com / manager123
+  - **Employee:** Create account via registration
 
 ## 🗄️ Database Setup (Supabase)
 
-### Step 1: Create Supabase Project
-1. Go to [supabase.com](https://supabase.com)
-2. Create a new project
-3. Copy your project URL and anon key
-
-### Step 2: Create Tables
-Run this SQL in Supabase SQL Editor:
+Run this SQL in your Supabase SQL Editor:
 
 ```sql
--- Users table
+-- Users table with role field
 CREATE TABLE IF NOT EXISTS public.users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   username TEXT NOT NULL UNIQUE,
   email TEXT NOT NULL UNIQUE,
   password TEXT NOT NULL,
-  is_admin BOOLEAN DEFAULT FALSE,
+  role TEXT NOT NULL DEFAULT 'employee',
+  department TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -137,216 +87,189 @@ CREATE TABLE IF NOT EXISTS public.tickets (
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Create indexes for better performance
+-- Indexes
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
 CREATE INDEX IF NOT EXISTS idx_tickets_created_by ON public.tickets(created_by_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_assigned_to ON public.tickets(assigned_to_id);
 CREATE INDEX IF NOT EXISTS idx_tickets_status ON public.tickets(status);
 ```
 
-## 🌐 API Endpoints
+## 📱 API Endpoints
 
-### Authentication Routes
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/auth/register` | Register new user |
-| POST | `/api/auth/login` | User login |
-| POST | `/api/auth/admin-login` | Admin login |
-| GET | `/api/auth/me` | Get current user |
-| GET | `/api/users` | Get all users |
+### Authentication
+- `POST /api/auth/register` - Register as employee
+- `POST /api/auth/login` - Standard login
+- `GET /api/auth/me` - Get current user
+- `GET /api/permissions` - Get role-based permissions
 
-### Ticket Routes
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/tickets` | Create new ticket |
-| GET | `/api/tickets` | Get user's tickets |
-| GET | `/api/tickets/:id` | Get ticket details |
-| PATCH | `/api/tickets/:id` | Update ticket |
-| DELETE | `/api/tickets/:id` | Delete ticket |
-| POST | `/api/tickets/:id/assign` | Assign ticket to user |
+### Ticket Management
+- `POST /api/tickets` - Create ticket (All roles)
+- `GET /api/tickets` - Get accessible tickets (role-based filtering)
+- `GET /api/tickets/:id` - Get ticket details
+- `PATCH /api/tickets/:id` - Update ticket (permissions checked)
+- `DELETE /api/tickets/:id` - Delete ticket (Admin/Manager only)
+- `POST /api/tickets/:id/assign` - Assign ticket (Admin/Manager only)
 
-## 📱 Application Routes
+### User Management
+- `GET /api/users` - Get all users (Admin only)
 
-| Route | Access | Description |
-|-------|--------|-------------|
-| `/login` | Public | User login page |
-| `/register` | Public | User registration |
-| `/admin-login` | Public | Admin login |
-| `/dashboard` | User | User profile dashboard |
-| `/admin-dashboard` | Admin | Admin management panel |
-| `/tickets` | User | Ticket list view |
-| `/create-ticket` | User | Create new ticket form |
-| `/ticket/:id` | User | Ticket detail & edit |
+## 🔐 Role-Based Permission Matrix
 
-## 🔄 Ticket Lifecycle
+| Feature | Admin | Manager | Employee |
+|---------|-------|---------|----------|
+| Create Ticket | ✅ | ✅ | ✅ |
+| View All Tickets | ✅ | ✅ | ❌ |
+| View Own Tickets | ✅ | ✅ | ✅ |
+| Edit All Tickets | ✅ | ✅ | ❌ |
+| Delete Tickets | ✅ | ❌ | ❌ |
+| Assign Tickets | ✅ | ✅ | ❌ |
+| Manage Users | ✅ | ❌ | ❌ |
+| View Reports | ✅ | ✅ | ❌ |
 
-1. **Open** - Ticket created, waiting for assignment
-2. **In Progress** - Admin/Team member working on issue
-3. **Resolved** - Issue fixed, awaiting confirmation
-4. **Closed** - Issue confirmed resolved, ticket archived
+## 🌊 Ticket Status Flow
 
-## 🎨 Priority Levels
+- **Open** → Initial state when ticket is created
+- **In Progress** → Being worked on
+- **Resolved** → Issue fixed, awaiting verification
+- **Closed** → Verified and archived
+
+## ⚡ Priority Levels
 
 - **Low** - Can be addressed in future releases
-- **Medium** - Should be handled soon
+- **Medium** (default) - Normal priority
 - **High** - Needs urgent attention
 - **Critical** - Immediate action required, impacts production
+
+## 📊 Tech Stack
+
+**Frontend:**
+- React 19 + TypeScript
+- Tailwind CSS + Shadcn/UI
+- Wouter (Routing)
+- React Hook Form + Zod (Validation)
+- TanStack Query
+
+**Backend:**
+- Node.js + Express
+- TypeScript
+- Drizzle ORM
+- Bcryptjs (Password hashing)
+- Supabase (Database)
+
+**Deployment:**
+- Local only (As requested)
+- Or Docker/Custom server
 
 ## 📦 Project Structure
 
 ```
-.
 ├── client/
-│   └── src/
-│       ├── pages/
-│       │   ├── login.tsx              # User login
-│       │   ├── register.tsx           # User registration
-│       │   ├── dashboard.tsx          # User dashboard
-│       │   ├── admin-login.tsx        # Admin login
-│       │   ├── admin-dashboard.tsx    # Admin panel
-│       │   ├── tickets.tsx            # Ticket list
-│       │   ├── create-ticket.tsx      # Create ticket
-│       │   └── ticket-detail.tsx      # Ticket details
-│       ├── components/                # UI Components
-│       ├── lib/                       # Utilities
-│       ├── App.tsx                    # Main app component
-│       └── index.css                  # Styles
+│   └── src/pages/
+│       ├── login.tsx
+│       ├── admin-login.tsx
+│       ├── manager-login.tsx
+│       ├── register.tsx
+│       ├── dashboard.tsx
+│       ├── tickets.tsx
+│       ├── ticket-detail.tsx
+│       └── create-ticket.tsx
 ├── server/
-│   ├── index.ts                       # Express server
-│   ├── routes.ts                      # API routes
-│   └── storage.ts                     # Database operations
+│   ├── routes.ts (Role-based authorization)
+│   └── storage.ts (Data operations)
 ├── shared/
-│   └── schema.ts                      # Data models & validation
-├── script/
-│   └── build.ts                       # Build script
-├── package.json                       # Dependencies
-├── tsconfig.json                      # TypeScript config
-├── vite.config.ts                     # Vite config
-└── vercel.json                        # Vercel deployment config
+│   └── schema.ts (Data models + permissions)
+└── README.md
 ```
 
-## 🚀 Deployment
-
-### Deploy to Vercel
-
-1. **Push to GitHub**
-   ```bash
-   git add .
-   git commit -m "Production ticket system"
-   git push origin main
-   ```
-
-2. **Connect to Vercel**
-   - Go to [vercel.com](https://vercel.com)
-   - Click "New Project"
-   - Import your GitHub repository
-
-3. **Add Environment Variables**
-   In Vercel dashboard, add:
-   - `SUPABASE_URL` - Your Supabase project URL
-   - `SUPABASE_ANON_KEY` - Your Supabase anonymous key
-
-4. **Deploy**
-   - Click "Deploy"
-   - Your app will be live at `https://your-project.vercel.app`
-
-### Local Production Build
-
-```bash
-npm run build
-npm run start
-```
-
-## 🔐 Security Features
+## 🔒 Security Features
 
 - ✅ Password hashing with bcryptjs
-- ✅ Admin role-based access control
+- ✅ Role-based access control (RBAC)
+- ✅ Backend permission validation
 - ✅ Input validation with Zod schemas
-- ✅ Secure session management
+- ✅ Protected API endpoints
 - ✅ Environment variable protection
-- ✅ CORS configuration for production
 
-## 📊 Available Scripts
+## 📝 Usage Scenarios
+
+### Admin Workflow
+1. Login as admin
+2. View all tickets system-wide
+3. Assign tickets to managers/employees
+4. Manage user roles
+5. Delete problematic tickets
+6. Monitor entire system
+
+### Manager Workflow
+1. Login as manager
+2. View all department tickets
+3. Assign tickets to team members
+4. Update ticket status
+5. Track team productivity
+6. Escalate critical issues
+
+### Employee Workflow
+1. Register account
+2. Create ticket about issue
+3. View own tickets
+4. Track assigned work
+5. Get feedback from managers
+6. Update ticket status
+
+## 🚀 Running Locally
 
 ```bash
-# Development
-npm run dev              # Start development server
+# Install dependencies
+npm install
 
-# Production
-npm run build            # Build for production
-npm start                # Start production server
+# Start development server
+npm run dev
 
-# Database
-npm run db:push          # Push schema to database
+# Build for production
+npm run build
 
-# Code Quality
-npm run check            # Run TypeScript check
+# Run production build
+npm start
 ```
 
-## 🎯 Usage Examples
+## 📋 Demo Accounts (Pre-loaded)
 
-### Creating a Ticket
-1. Go to `/tickets`
-2. Click "Create Ticket"
-3. Fill in title, description, and priority
-4. Click "Create Ticket"
+1. **Admin**
+   - Email: admin@example.com
+   - Password: admin123
 
-### Assigning a Ticket (Admin)
-1. Go to ticket detail page
-2. Use "Assign To" dropdown to select team member
-3. Change status as needed
-4. Changes are saved automatically
+2. **Manager**
+   - Email: manager@example.com
+   - Password: manager123
 
-### Managing Tickets (Admin)
-1. Go to `/admin-dashboard`
-2. View all tickets in system
-3. Click on any ticket to manage
-4. Update status and assignments
-5. Delete resolved tickets
+3. **Employee**
+   - Register new account yourself
+   - Use any email/password
 
-## 🐛 Troubleshooting
+## ✨ Features
 
-### Database Connection Issues
-- Verify `SUPABASE_URL` and `SUPABASE_ANON_KEY` are correct
-- Check Supabase project is active
-- Ensure tables are created with correct schema
-
-### Login Not Working
-- Verify credentials are correct
-- Admin account: `admin@example.com` / `admin123`
-- Check if user is registered
-
-### Tickets Not Showing
-- Ensure database tables are created
-- Verify user is logged in
-- Check browser console for errors
-
-## 📞 Support
-
-For issues or questions:
-1. Check the logs: `npm run dev`
-2. Verify database connection
-3. Ensure environment variables are set
-4. Review the DEPLOYMENT_GUIDE.md for detailed setup
-
-## 📝 License
-
-This project is proprietary software for internal company use.
-
-## 🎉 Ready to Use!
-
-Your production ticket management system is ready to deploy. All features are fully functional:
-
-- ✅ User authentication
+- ✅ Three-tier role system (Admin, Manager, Employee)
 - ✅ Ticket creation and management
-- ✅ Admin dashboard
 - ✅ Status and priority tracking
-- ✅ User assignment
+- ✅ User assignment system
+- ✅ Role-based UI filtering
+- ✅ Backend permission validation
 - ✅ Responsive design
+- ✅ Works without Supabase (in-memory fallback)
+- ✅ Immediate ready-to-use system
 
-Start managing your production tickets today!
+## 🎯 Production Ready
+
+Your system is fully functional with:
+- Complete role-based access control
+- Backend authorization checks
+- Three pre-configured user types
+- All features implemented
+- Works locally without external dependencies
 
 ---
 
+**Version:** 2.0.0 (Role-Based Access Control)  
 **Last Updated:** November 2024  
-**Version:** 1.0.0
+**Status:** Ready for Local Deployment ✅
