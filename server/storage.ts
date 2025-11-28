@@ -245,6 +245,24 @@ export class SupabaseStorage implements IStorage {
     }
   }
 
+  private transformTicket(data: any): Ticket {
+    return {
+      id: data.id,
+      ticketNumber: data.ticket_number,
+      title: data.title,
+      description: data.description,
+      category: data.category,
+      status: data.status,
+      priority: data.priority,
+      plant: data.plant,
+      imageUrl: data.image_url || null,
+      createdById: data.created_by_id,
+      assignedToId: data.assigned_to_id || null,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  }
+
   async getNextTicketNumber(): Promise<string> {
     if (this.useInMemory) {
       // Get the highest ticket number from existing tickets
@@ -330,7 +348,7 @@ export class SupabaseStorage implements IStorage {
       return newTicket;
     }
 
-    return (data as unknown as Ticket);
+    return this.transformTicket(data);
   }
 
   async getTickets(userId: string, role: string, userPlant?: string): Promise<Ticket[]> {
@@ -389,7 +407,7 @@ export class SupabaseStorage implements IStorage {
       );
     }
 
-    return ((data as unknown as Ticket[]) || []);
+    return (data || []).map(t => this.transformTicket(t));
   }
 
   async getTicket(id: string): Promise<Ticket | undefined> {
@@ -407,7 +425,7 @@ export class SupabaseStorage implements IStorage {
       return inMemoryTickets.get(id);
     }
 
-    return (data as unknown as Ticket);
+    return data ? this.transformTicket(data) : undefined;
   }
 
   async updateTicket(id: string, updates: UpdateTicketInput): Promise<Ticket> {
@@ -437,7 +455,7 @@ export class SupabaseStorage implements IStorage {
       throw new Error(`Failed to update ticket: ${error.message}`);
     }
 
-    return (data as unknown as Ticket);
+    return this.transformTicket(data);
   }
 
   async deleteTicket(id: string): Promise<boolean> {
