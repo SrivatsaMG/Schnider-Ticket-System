@@ -119,13 +119,22 @@ export default function AdminDashboardPage() {
                     <li>✓ Admin utilities</li>
                   </ul>
                 </div>
-                <Button
-                  data-testid="button-view-tickets"
-                  onClick={() => setLocation("/tickets")}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
-                >
-                  View All Tickets
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    data-testid="button-view-tickets"
+                    onClick={() => setLocation("/tickets")}
+                    className="w-full bg-purple-600 hover:bg-purple-700"
+                  >
+                    View All Tickets
+                  </Button>
+                  <Button
+                    data-testid="button-manage-users"
+                    onClick={() => setLocation("/admin-users")}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                  >
+                    Manage Users
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

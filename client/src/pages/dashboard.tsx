@@ -46,13 +46,22 @@ export default function DashboardPage() {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900">Welcome, {user.username}!</h1>
-          <Button
-            data-testid="button-logout"
-            onClick={handleLogout}
-            variant="outline"
-          >
-            Logout
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              data-testid="button-profile"
+              onClick={() => setLocation("/profile")}
+              variant="outline"
+            >
+              Profile
+            </Button>
+            <Button
+              data-testid="button-logout"
+              onClick={handleLogout}
+              variant="outline"
+            >
+              Logout
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
