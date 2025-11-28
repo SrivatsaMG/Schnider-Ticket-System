@@ -19,6 +19,7 @@ interface CreateTicketFormData {
   title: string;
   description: string;
   category: string;
+  plant: string;
   priority: "low" | "medium" | "high" | "critical";
 }
 
@@ -37,25 +38,46 @@ const CATEGORIES = ["General", "Bug", "Feature Request", "Issue Report", "Mainte
 export default function CreateTicketPage() {
   const [, setLocation] = useLocation();
   const [user, setUser] = useState<User | null>(null);
+  const [plants, setPlants] = useState<Array<{ id: string; name: string }>>([]);
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<CreateTicketFormData>({
     defaultValues: {
       priority: "medium",
       category: "General",
+      plant: user?.plant || "",
     },
   });
   const [isLoading, setIsLoading] = useState(false);
   const priority = watch("priority");
   const category = watch("category");
+  const plant = watch("plant");
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
     if (storedUser) {
       const parsedUser = JSON.parse(storedUser);
       setUser(parsedUser);
+      if (parsedUser.plant) {
+        setValue("plant", parsedUser.plant);
+      }
     } else {
       setLocation("/login");
     }
-  }, [setLocation]);
+  }, [setLocation, setValue]);
+
+  useEffect(() => {
+    const fetchPlants = async () => {
+      try {
+        const response = await fetch("/api/plants");
+        if (response.ok) {
+          const data = await response.json();
+          setPlants(data);
+        }
+      } catch (error) {
+        console.error("Failed to load plants");
+      }
+    };
+    fetchPlants();
+  }, []);
 
   const onSubmit = async (data: CreateTicketFormData) => {
     if (!user) {
@@ -69,6 +91,7 @@ export default function CreateTicketPage() {
         title: data.title,
         description: data.description,
         category: data.category,
+        plant: data.plant,
         priority: data.priority,
       };
 
@@ -153,6 +176,28 @@ export default function CreateTicketPage() {
                     {errors.description.message}
                   </p>
                 )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="plant">Plant</Label>
+                <Select value={plant} onValueChange={(value) => setValue("plant", value)}>
+                  <SelectTrigger data-testid="select-plant">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {plants.length === 0 ? (
+                      <SelectItem value="" disabled>
+                        No plants available
+                      </SelectItem>
+                    ) : (
+                      plants.map((p) => (
+                        <SelectItem key={p.id} value={p.name}>
+                          {p.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">

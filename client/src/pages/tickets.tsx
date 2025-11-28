@@ -98,6 +98,13 @@ export default function TicketsPage() {
           </div>
           <div className="flex gap-2">
             <Button
+              data-testid="button-back-dashboard"
+              onClick={() => setLocation("/dashboard")}
+              variant="outline"
+            >
+              ← Back to Dashboard
+            </Button>
+            <Button
               data-testid="button-create-ticket"
               onClick={() => setLocation("/create-ticket")}
               className="bg-green-600 hover:bg-green-700"
