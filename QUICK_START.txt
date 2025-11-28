@@ -1,0 +1,58 @@
+════════════════════════════════════════════════════════════════════
+   PRODUCTION TICKET MANAGEMENT SYSTEM - QUICK START
+════════════════════════════════════════════════════════════════════
+
+1. RUN THE SQL
+   ✓ Open: database.sql
+   ✓ Copy ALL code
+   ✓ Paste into Supabase SQL Editor (or your SQL tool)
+   ✓ Click RUN
+   ✓ Wait for success ✅
+
+2. SETUP ENVIRONMENT
+   ✓ Create .env.local file
+   ✓ Add your Supabase credentials:
+     SUPABASE_URL=your-url
+     SUPABASE_ANON_KEY=your-key
+
+3. START THE APP
+   ✓ npm install
+   ✓ npm run dev
+   ✓ Open http://localhost:5000
+
+4. LOGIN
+   ✓ Email: admin@example.com
+   ✓ Password: admin123
+   ✓ Click "Login"
+
+════════════════════════════════════════════════════════════════════
+   DEMO ACCOUNTS (Ready to use after running SQL)
+════════════════════════════════════════════════════════════════════
+
+ADMIN:
+  Email: admin@example.com
+  Password: admin123
+  Access: Full system
+
+MANAGER:
+  Email: manager@example.com
+  Password: manager123
+  Access: Department management
+
+EMPLOYEE:
+  Register yourself on signup page
+  Access: Personal tickets
+
+════════════════════════════════════════════════════════════════════
+   FILES YOU NEED
+════════════════════════════════════════════════════════════════════
+
+database.sql ........... SQL setup (copy to SQL editor)
+.env.local ............. Your Supabase credentials
+SETUP_GUIDE.md ......... Detailed setup instructions
+README.md .............. Full documentation
+ROLES.md ............... Role permissions
+
+════════════════════════════════════════════════════════════════════
+   THAT'S IT! You're ready to use your ticket system!
+════════════════════════════════════════════════════════════════════
